@@ -17,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 import javax.inject.Singleton
 
 @Singleton
@@ -60,7 +61,9 @@ class UpdateManager @Inject constructor(
         val fileName = "curbos_update.apk"
         
         // Visual Feedback
-        com.curbos.pos.common.SnackbarManager.showMessage("Downloading update... Check notification bar ⬇️")
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+            com.curbos.pos.common.SnackbarManager.showMessage("Downloading update... Check notification bar ⬇️")
+        }
 
         val request = DownloadManager.Request(Uri.parse(downloadUrl))
             .setTitle("Downloading CurbOS Update")

@@ -1,6 +1,7 @@
 package com.curbos.pos
 
 import android.app.Application
+import com.curbos.pos.data.remote.SupabaseManager
 
 @dagger.hilt.android.HiltAndroidApp
 class CurbOSApp : Application(), androidx.work.Configuration.Provider {
@@ -17,6 +18,7 @@ class CurbOSApp : Application(), androidx.work.Configuration.Provider {
         instance = this
         // Explicitly initialize WorkManager if needed, but usually on-demand is fine if manifest is set up.
         // However, with Hilt, on-demand init works if getWorkManagerConfiguration is implemented.
+        SupabaseManager.init()
     }
 
     override val workManagerConfiguration: androidx.work.Configuration
