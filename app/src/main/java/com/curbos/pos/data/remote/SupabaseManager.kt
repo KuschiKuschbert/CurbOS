@@ -65,6 +65,15 @@ object SupabaseManager {
         client
     }
 
+    suspend fun logRemoteError(entry: com.curbos.pos.common.Logger.RemoteLogEntry) {
+        try {
+            client.postgrest["admin_error_logs"].insert(entry)
+        } catch (e: Exception) {
+            // Failure here must be silent for the logger to avoid direct recursion or crash
+            android.util.Log.e("SupabaseManager", "Failed to insert remote log", e)
+        }
+    }
+
     // Auth0 Login (Exchange ID Token)
     suspend fun signInWithAuth0(): com.curbos.pos.common.Result<Boolean> {
         return try {

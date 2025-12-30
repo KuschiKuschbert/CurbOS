@@ -1,14 +1,52 @@
 package com.curbos.pos.data.prefs
 
 import android.content.Context
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
+import com.curbos.pos.common.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class ProfileManager(context: Context) {
-    private val prefs = context.getSharedPreferences("chef_profile", Context.MODE_PRIVATE)
+    private val masterKey = MasterKey.Builder(context)
+        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        .build()
+
+    private val prefs = EncryptedSharedPreferences.create(
+        context,
+        "chef_profile_secure",
+        masterKey,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
+
     private val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO)
+
+    init {
+        migrateOldPrefs(context)
+    }
+
+    private fun migrateOldPrefs(context: Context) {
+        val oldPrefs = context.getSharedPreferences("chef_profile", Context.MODE_PRIVATE)
+        if (oldPrefs.all.isNotEmpty()) {
+            com.curbos.pos.common.Logger.i("ProfileManager", "Migrating old unencrypted preferences to secure storage...")
+            val editor = prefs.edit()
+            oldPrefs.all.forEach { (key, value) ->
+                when (value) {
+                    is String -> editor.putString(key, value)
+                    is Boolean -> editor.putBoolean(key, value)
+                    is Int -> editor.putInt(key, value)
+                    is Long -> editor.putLong(key, value)
+                    is Float -> editor.putFloat(key, value)
+                }
+            }
+            editor.apply()
+            oldPrefs.edit().clear().apply()
+            com.curbos.pos.common.Logger.i("ProfileManager", "Migration complete. Old storage cleared.")
+        }
+    }
 
     private val _chefNameFlow = MutableStateFlow(getChefName())
     val chefNameFlow: StateFlow<String?> = _chefNameFlow.asStateFlow()

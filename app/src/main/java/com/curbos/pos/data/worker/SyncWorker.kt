@@ -21,6 +21,9 @@ class SyncWorker @AssistedInject constructor(
             val success = transactionSyncManager.processQueueWithResult() 
             
             if (success) Result.success() else Result.retry()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            // Normal cancellation by WorkManager, don't log as error
+            throw e
         } catch (e: Exception) {
             com.curbos.pos.common.Logger.e("SyncWorker", "Sync failed", e)
             Result.retry()

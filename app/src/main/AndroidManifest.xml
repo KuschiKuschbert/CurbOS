@@ -37,7 +37,8 @@
         android:label="CurbOS"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.CurbOS">
+        android:theme="@style/Theme.CurbOS"
+        android:enableOnBackInvokedCallback="true">
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
@@ -66,6 +67,23 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="com.auth0.android.provider.RedirectActivity"
+            android:exported="true"
+            tools:node="replace">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="@string/com_auth0_domain"
+                    android:pathPrefix="/android/${applicationId}/callback"
+                    android:scheme="demo" />
             </intent-filter>
         </activity>
     </application>

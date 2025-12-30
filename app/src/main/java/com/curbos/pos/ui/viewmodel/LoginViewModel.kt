@@ -43,10 +43,17 @@ class LoginViewModel @Inject constructor(
     fun login(context: android.content.Context) {
         _loginState.value = LoginState.Loading
         
-        val auth0 = com.auth0.android.Auth0(
-            context.getString(com.curbos.pos.R.string.com_auth0_client_id),
-            context.getString(com.curbos.pos.R.string.com_auth0_domain)
-        )
+        val clientId = try { context.getString(R.string.com_auth0_client_id) } catch (e: Exception) { null }
+        val domain = try { context.getString(R.string.com_auth0_domain) } catch (e: Exception) { null }
+
+        if (clientId.isNullOrBlank() || domain.isNullOrBlank()) {
+            val errorMsg = "Auth0 Configuration Missing or Invalid resource ID. ClientID: $clientId, Domain: $domain"
+            com.curbos.pos.common.Logger.e("LoginViewModel", errorMsg)
+            _loginState.value = LoginState.Error("System Configuration Error: Missing Auth0 Keys")
+            return
+        }
+
+        val auth0 = com.auth0.android.Auth0(clientId, domain)
 
         com.auth0.android.provider.WebAuthProvider.login(auth0)
             .withScheme("demo") // Ensure this matches build.gradle manifestPlaceholder

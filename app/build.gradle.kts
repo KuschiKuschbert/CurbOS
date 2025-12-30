@@ -202,4 +202,10 @@ dependencies {
 
     // QR Code Generation
     implementation("com.google.zxing:core:3.5.3")
+
+    // Security & Data Encryption
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
+    // Advanced Logging
+    implementation("com.jakewharton.timber:timber:5.0.1")
 }
