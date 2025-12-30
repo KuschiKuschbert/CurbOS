@@ -46,13 +46,14 @@ class TransactionRepositoryImpl @Inject constructor(
         return SupabaseManager.fetchActiveTransactions()
     }
 
-    override suspend fun createTransaction(transaction: Transaction): Result<Unit> {
+    override suspend fun createTransaction(transaction: Transaction): Result<Boolean> {
         return try {
             transactionSyncManager.stageTransaction(transaction)
             triggerSync()
             // Immediately attempt to process the queue in the current coroutine
-            transactionSyncManager.processQueue()
-            Result.Success(Unit)
+            // Return true if sync was successful, false if it stays offline
+            val isSynced = transactionSyncManager.processQueueWithResult()
+            Result.Success(isSynced)
         } catch (e: Exception) {
             Result.Error(e, "Failed to stage transaction: ${e.message}")
         }

@@ -1,8 +1,8 @@
 1<?xml version="1.0" encoding="utf-8"?>
 2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
 3    package="com.curbos.pos"
-4    android:versionCode="1"
-5    android:versionName="1.0" >
+4    android:versionCode="13"
+5    android:versionName="0.2.3-experimental-dev" >
 6
 7    <uses-sdk
 8        android:minSdkVersion="26"
@@ -49,114 +49,116 @@
 25    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" />
 25-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:19:5-78
 25-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:19:22-75
-26
-27    <queries>
-27-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:21:5-29:15
-28        <package android:name="com.squareup" />
-28-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:22:9-48
-28-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:22:18-45
-29        <package android:name="com.squareup.subero" /> <!-- Square for Restaurants -->
-29-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:23:9-55
-29-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:23:18-52
-30        <package android:name="com.squareup.retail" /> <!-- Square for Retail -->
+26    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+26-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:20:5-83
+26-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:20:22-80
+27
+28    <queries>
+28-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:22:5-30:15
+29        <package android:name="com.squareup" />
+29-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:23:9-48
+29-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:23:18-45
+30        <package android:name="com.squareup.subero" /> <!-- Square for Restaurants -->
 30-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:24:9-55
 30-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:24:18-52
-31
-32        <intent>
-32-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:26:9-28:18
-33            <action android:name="com.squareup.pos.action.CHARGE" />
-33-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:27:13-69
-33-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:27:21-66
-34        </intent>
-35        <intent>
-35-->[com.auth0.android:auth0:2.10.2] /Users/danielkuschmierz/.gradle/caches/transforms-4/34f1922d54840a6249c5030eac1863c9/transformed/jetified-auth0-2.10.2/AndroidManifest.xml:15:9-21:18
-36            <action android:name="android.intent.action.VIEW" />
-36-->[com.auth0.android:auth0:2.10.2] /Users/danielkuschmierz/.gradle/caches/transforms-4/34f1922d54840a6249c5030eac1863c9/transformed/jetified-auth0-2.10.2/AndroidManifest.xml:16:13-65
-36-->[com.auth0.android:auth0:2.10.2] /Users/danielkuschmierz/.gradle/caches/transforms-4/34f1922d54840a6249c5030eac1863c9/transformed/jetified-auth0-2.10.2/AndroidManifest.xml:16:21-62
-37
-38            <category android:name="android.intent.category.BROWSABLE" />
-38-->[com.auth0.android:auth0:2.10.2] /Users/danielkuschmierz/.gradle/caches/transforms-4/34f1922d54840a6249c5030eac1863c9/transformed/jetified-auth0-2.10.2/AndroidManifest.xml:18:13-74
-38-->[com.auth0.android:auth0:2.10.2] /Users/danielkuschmierz/.gradle/caches/transforms-4/34f1922d54840a6249c5030eac1863c9/transformed/jetified-auth0-2.10.2/AndroidManifest.xml:18:23-71
-39
-40            <data android:scheme="https" />
-40-->[com.auth0.android:auth0:2.10.2] /Users/danielkuschmierz/.gradle/caches/transforms-4/34f1922d54840a6249c5030eac1863c9/transformed/jetified-auth0-2.10.2/AndroidManifest.xml:20:13-44
-40-->[com.auth0.android:auth0:2.10.2] /Users/danielkuschmierz/.gradle/caches/transforms-4/34f1922d54840a6249c5030eac1863c9/transformed/jetified-auth0-2.10.2/AndroidManifest.xml:20:19-41
-41        </intent>
-42    </queries>
-43
-44    <uses-permission android:name="android.permission.USE_BIOMETRIC" /> <!-- suppress DeprecatedClassUsageInspection -->
-44-->[androidx.biometric:biometric:1.2.0-alpha05] /Users/danielkuschmierz/.gradle/caches/transforms-4/815e00ff564601fe5c5b7f8fc63274bc/transformed/biometric-1.2.0-alpha05/AndroidManifest.xml:22:5-72
-44-->[androidx.biometric:biometric:1.2.0-alpha05] /Users/danielkuschmierz/.gradle/caches/transforms-4/815e00ff564601fe5c5b7f8fc63274bc/transformed/biometric-1.2.0-alpha05/AndroidManifest.xml:22:22-69
-45    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
-45-->[androidx.biometric:biometric:1.2.0-alpha05] /Users/danielkuschmierz/.gradle/caches/transforms-4/815e00ff564601fe5c5b7f8fc63274bc/transformed/biometric-1.2.0-alpha05/AndroidManifest.xml:25:5-74
-45-->[androidx.biometric:biometric:1.2.0-alpha05] /Users/danielkuschmierz/.gradle/caches/transforms-4/815e00ff564601fe5c5b7f8fc63274bc/transformed/biometric-1.2.0-alpha05/AndroidManifest.xml:25:22-71
-46    <uses-permission android:name="android.permission.WAKE_LOCK" />
-46-->[androidx.work:work-runtime:2.9.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/9664ed479f08954057217fe988cdb2b5/transformed/work-runtime-2.9.0/AndroidManifest.xml:23:5-68
-46-->[androidx.work:work-runtime:2.9.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/9664ed479f08954057217fe988cdb2b5/transformed/work-runtime-2.9.0/AndroidManifest.xml:23:22-65
-47    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-47-->[androidx.work:work-runtime:2.9.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/9664ed479f08954057217fe988cdb2b5/transformed/work-runtime-2.9.0/AndroidManifest.xml:25:5-81
-47-->[androidx.work:work-runtime:2.9.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/9664ed479f08954057217fe988cdb2b5/transformed/work-runtime-2.9.0/AndroidManifest.xml:25:22-78
-48    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-48-->[androidx.work:work-runtime:2.9.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/9664ed479f08954057217fe988cdb2b5/transformed/work-runtime-2.9.0/AndroidManifest.xml:26:5-77
-48-->[androidx.work:work-runtime:2.9.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/9664ed479f08954057217fe988cdb2b5/transformed/work-runtime-2.9.0/AndroidManifest.xml:26:22-74
-49
-50    <permission
-50-->[androidx.core:core:1.12.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/ecc89545989360d3f39e604a104dd889/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
-51        android:name="com.curbos.pos.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-51-->[androidx.core:core:1.12.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/ecc89545989360d3f39e604a104dd889/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
-52        android:protectionLevel="signature" />
-52-->[androidx.core:core:1.12.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/ecc89545989360d3f39e604a104dd889/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
-53
-54    <uses-permission android:name="com.curbos.pos.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
-54-->[androidx.core:core:1.12.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/ecc89545989360d3f39e604a104dd889/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
-54-->[androidx.core:core:1.12.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/ecc89545989360d3f39e604a104dd889/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
-55
-56    <application
-56-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:31:5-70:19
-57        android:name="com.curbos.pos.CurbOSApp"
-57-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:32:9-34
-58        android:allowBackup="false"
-58-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:33:9-36
-59        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
-59-->[androidx.core:core:1.12.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/ecc89545989360d3f39e604a104dd889/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
-60        android:debuggable="true"
-61        android:extractNativeLibs="false"
-62        android:fullBackupContent="false"
-62-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:34:9-42
-63        android:icon="@mipmap/ic_launcher"
-63-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:35:9-43
-64        android:label="CurbOS"
-64-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:36:9-31
-65        android:roundIcon="@mipmap/ic_launcher_round"
-65-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:37:9-54
-66        android:supportsRtl="true"
-66-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:38:9-35
-67        android:testOnly="true"
+31        <package android:name="com.squareup.retail" /> <!-- Square for Retail -->
+31-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:25:9-55
+31-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:25:18-52
+32
+33        <intent>
+33-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:27:9-29:18
+34            <action android:name="com.squareup.pos.action.CHARGE" />
+34-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:28:13-69
+34-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:28:21-66
+35        </intent>
+36        <intent>
+36-->[com.auth0.android:auth0:2.10.2] /Users/danielkuschmierz/.gradle/caches/transforms-4/34f1922d54840a6249c5030eac1863c9/transformed/jetified-auth0-2.10.2/AndroidManifest.xml:15:9-21:18
+37            <action android:name="android.intent.action.VIEW" />
+37-->[com.auth0.android:auth0:2.10.2] /Users/danielkuschmierz/.gradle/caches/transforms-4/34f1922d54840a6249c5030eac1863c9/transformed/jetified-auth0-2.10.2/AndroidManifest.xml:16:13-65
+37-->[com.auth0.android:auth0:2.10.2] /Users/danielkuschmierz/.gradle/caches/transforms-4/34f1922d54840a6249c5030eac1863c9/transformed/jetified-auth0-2.10.2/AndroidManifest.xml:16:21-62
+38
+39            <category android:name="android.intent.category.BROWSABLE" />
+39-->[com.auth0.android:auth0:2.10.2] /Users/danielkuschmierz/.gradle/caches/transforms-4/34f1922d54840a6249c5030eac1863c9/transformed/jetified-auth0-2.10.2/AndroidManifest.xml:18:13-74
+39-->[com.auth0.android:auth0:2.10.2] /Users/danielkuschmierz/.gradle/caches/transforms-4/34f1922d54840a6249c5030eac1863c9/transformed/jetified-auth0-2.10.2/AndroidManifest.xml:18:23-71
+40
+41            <data android:scheme="https" />
+41-->[com.auth0.android:auth0:2.10.2] /Users/danielkuschmierz/.gradle/caches/transforms-4/34f1922d54840a6249c5030eac1863c9/transformed/jetified-auth0-2.10.2/AndroidManifest.xml:20:13-44
+41-->[com.auth0.android:auth0:2.10.2] /Users/danielkuschmierz/.gradle/caches/transforms-4/34f1922d54840a6249c5030eac1863c9/transformed/jetified-auth0-2.10.2/AndroidManifest.xml:20:19-41
+42        </intent>
+43    </queries>
+44
+45    <uses-permission android:name="android.permission.USE_BIOMETRIC" /> <!-- suppress DeprecatedClassUsageInspection -->
+45-->[androidx.biometric:biometric:1.2.0-alpha05] /Users/danielkuschmierz/.gradle/caches/transforms-4/815e00ff564601fe5c5b7f8fc63274bc/transformed/biometric-1.2.0-alpha05/AndroidManifest.xml:22:5-72
+45-->[androidx.biometric:biometric:1.2.0-alpha05] /Users/danielkuschmierz/.gradle/caches/transforms-4/815e00ff564601fe5c5b7f8fc63274bc/transformed/biometric-1.2.0-alpha05/AndroidManifest.xml:22:22-69
+46    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+46-->[androidx.biometric:biometric:1.2.0-alpha05] /Users/danielkuschmierz/.gradle/caches/transforms-4/815e00ff564601fe5c5b7f8fc63274bc/transformed/biometric-1.2.0-alpha05/AndroidManifest.xml:25:5-74
+46-->[androidx.biometric:biometric:1.2.0-alpha05] /Users/danielkuschmierz/.gradle/caches/transforms-4/815e00ff564601fe5c5b7f8fc63274bc/transformed/biometric-1.2.0-alpha05/AndroidManifest.xml:25:22-71
+47    <uses-permission android:name="android.permission.WAKE_LOCK" />
+47-->[androidx.work:work-runtime:2.9.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/9664ed479f08954057217fe988cdb2b5/transformed/work-runtime-2.9.0/AndroidManifest.xml:23:5-68
+47-->[androidx.work:work-runtime:2.9.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/9664ed479f08954057217fe988cdb2b5/transformed/work-runtime-2.9.0/AndroidManifest.xml:23:22-65
+48    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+48-->[androidx.work:work-runtime:2.9.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/9664ed479f08954057217fe988cdb2b5/transformed/work-runtime-2.9.0/AndroidManifest.xml:25:5-81
+48-->[androidx.work:work-runtime:2.9.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/9664ed479f08954057217fe988cdb2b5/transformed/work-runtime-2.9.0/AndroidManifest.xml:25:22-78
+49    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+49-->[androidx.work:work-runtime:2.9.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/9664ed479f08954057217fe988cdb2b5/transformed/work-runtime-2.9.0/AndroidManifest.xml:26:5-77
+49-->[androidx.work:work-runtime:2.9.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/9664ed479f08954057217fe988cdb2b5/transformed/work-runtime-2.9.0/AndroidManifest.xml:26:22-74
+50
+51    <permission
+51-->[androidx.core:core:1.12.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/ecc89545989360d3f39e604a104dd889/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
+52        android:name="com.curbos.pos.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+52-->[androidx.core:core:1.12.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/ecc89545989360d3f39e604a104dd889/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
+53        android:protectionLevel="signature" />
+53-->[androidx.core:core:1.12.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/ecc89545989360d3f39e604a104dd889/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
+54
+55    <uses-permission android:name="com.curbos.pos.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+55-->[androidx.core:core:1.12.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/ecc89545989360d3f39e604a104dd889/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
+55-->[androidx.core:core:1.12.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/ecc89545989360d3f39e604a104dd889/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
+56
+57    <application
+57-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:32:5-71:19
+58        android:name="com.curbos.pos.CurbOSApp"
+58-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:33:9-34
+59        android:allowBackup="false"
+59-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:34:9-36
+60        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+60-->[androidx.core:core:1.12.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/ecc89545989360d3f39e604a104dd889/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
+61        android:debuggable="true"
+62        android:extractNativeLibs="false"
+63        android:fullBackupContent="false"
+63-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:35:9-42
+64        android:icon="@mipmap/ic_launcher"
+64-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:36:9-43
+65        android:label="CurbOS"
+65-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:37:9-31
+66        android:roundIcon="@mipmap/ic_launcher_round"
+66-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:38:9-54
+67        android:supportsRtl="true"
+67-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:39:9-35
 68        android:theme="@style/Theme.CurbOS" >
-68-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:39:9-44
+68-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:40:9-44
 69        <provider
 70            android:name="androidx.core.content.FileProvider"
-70-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:41:13-62
+70-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:42:13-62
 71            android:authorities="com.curbos.pos.provider"
-71-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:42:13-60
+71-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:43:13-60
 72            android:exported="false"
-72-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:43:13-37
+72-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:44:13-37
 73            android:grantUriPermissions="true" >
-73-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:44:13-47
+73-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:45:13-47
 74            <meta-data
-74-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:45:13-47:54
+74-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:46:13-48:54
 75                android:name="android.support.FILE_PROVIDER_PATHS"
-75-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:46:17-67
+75-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:47:17-67
 76                android:resource="@xml/file_paths" />
-76-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:47:17-51
+76-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:48:17-51
 77        </provider>
 78        <provider
 79            android:name="androidx.startup.InitializationProvider"
-79-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:51:13-67
+79-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:52:13-67
 80            android:authorities="com.curbos.pos.androidx-startup"
-80-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:52:13-68
+80-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:53:13-68
 81            android:exported="false" >
-81-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:53:13-37
+81-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:54:13-37
 82            <meta-data
 82-->[io.github.jan-tennert.supabase:gotrue-kt-android-debug:2.0.0] /Users/danielkuschmierz/.gradle/caches/transforms-4/a49fc841d29cada6652ebe8f88ef1a11/transformed/jetified-gotrue-kt-debug/AndroidManifest.xml:14:13-16:52
 83                android:name="io.github.jan.supabase.gotrue.SupabaseInitializer"
@@ -190,22 +192,22 @@
 97        </provider>
 98
 99        <activity
-99-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:61:9-69:20
+99-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:62:9-70:20
 100            android:name="com.curbos.pos.MainActivity"
-100-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:62:13-41
+100-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:63:13-41
 101            android:exported="true"
-101-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:63:13-36
+101-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:64:13-36
 102            android:theme="@style/Theme.CurbOS" >
-102-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:64:13-48
+102-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:65:13-48
 103            <intent-filter>
-103-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:65:13-68:29
+103-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:66:13-69:29
 104                <action android:name="android.intent.action.MAIN" />
-104-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:66:17-69
-104-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:66:25-66
+104-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:67:17-69
+104-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:67:25-66
 105
 106                <category android:name="android.intent.category.LAUNCHER" />
-106-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:67:17-77
-106-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:67:27-74
+106-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:68:17-77
+106-->/Users/danielkuschmierz/play around/CurbOS/app/src/main/AndroidManifest.xml:68:27-74
 107            </intent-filter>
 108        </activity>
 109        <activity

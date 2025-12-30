@@ -1,5 +1,6 @@
 package com.curbos.pos.ui.viewmodel;
 
+import com.curbos.pos.data.UpdateManager;
 import com.curbos.pos.data.local.PosDao;
 import com.curbos.pos.data.prefs.ProfileManager;
 import com.curbos.pos.data.repository.MenuRepository;
@@ -33,30 +34,36 @@ public final class AdminViewModel_Factory implements Factory<AdminViewModel> {
 
   private final Provider<MenuRepository> menuRepositoryProvider;
 
+  private final Provider<UpdateManager> updateManagerProvider;
+
   public AdminViewModel_Factory(Provider<PosDao> posDaoProvider,
       Provider<ProfileManager> profileManagerProvider,
       Provider<TransactionRepository> transactionRepositoryProvider,
-      Provider<MenuRepository> menuRepositoryProvider) {
+      Provider<MenuRepository> menuRepositoryProvider,
+      Provider<UpdateManager> updateManagerProvider) {
     this.posDaoProvider = posDaoProvider;
     this.profileManagerProvider = profileManagerProvider;
     this.transactionRepositoryProvider = transactionRepositoryProvider;
     this.menuRepositoryProvider = menuRepositoryProvider;
+    this.updateManagerProvider = updateManagerProvider;
   }
 
   @Override
   public AdminViewModel get() {
-    return newInstance(posDaoProvider.get(), profileManagerProvider.get(), transactionRepositoryProvider.get(), menuRepositoryProvider.get());
+    return newInstance(posDaoProvider.get(), profileManagerProvider.get(), transactionRepositoryProvider.get(), menuRepositoryProvider.get(), updateManagerProvider.get());
   }
 
   public static AdminViewModel_Factory create(Provider<PosDao> posDaoProvider,
       Provider<ProfileManager> profileManagerProvider,
       Provider<TransactionRepository> transactionRepositoryProvider,
-      Provider<MenuRepository> menuRepositoryProvider) {
-    return new AdminViewModel_Factory(posDaoProvider, profileManagerProvider, transactionRepositoryProvider, menuRepositoryProvider);
+      Provider<MenuRepository> menuRepositoryProvider,
+      Provider<UpdateManager> updateManagerProvider) {
+    return new AdminViewModel_Factory(posDaoProvider, profileManagerProvider, transactionRepositoryProvider, menuRepositoryProvider, updateManagerProvider);
   }
 
   public static AdminViewModel newInstance(PosDao posDao, ProfileManager profileManager,
-      TransactionRepository transactionRepository, MenuRepository menuRepository) {
-    return new AdminViewModel(posDao, profileManager, transactionRepository, menuRepository);
+      TransactionRepository transactionRepository, MenuRepository menuRepository,
+      UpdateManager updateManager) {
+    return new AdminViewModel(posDao, profileManager, transactionRepository, menuRepository, updateManager);
   }
 }

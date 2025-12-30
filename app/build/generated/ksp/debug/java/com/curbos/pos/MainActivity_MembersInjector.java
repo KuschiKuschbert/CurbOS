@@ -1,6 +1,7 @@
 package com.curbos.pos;
 
 import com.curbos.pos.data.SyncManager;
+import com.curbos.pos.data.UpdateManager;
 import com.curbos.pos.data.local.PosDao;
 import com.curbos.pos.data.p2p.P2PConnectivityManager;
 import com.curbos.pos.data.prefs.ProfileManager;
@@ -38,25 +39,30 @@ public final class MainActivity_MembersInjector implements MembersInjector<MainA
 
   private final Provider<MenuRepository> menuRepositoryProvider;
 
+  private final Provider<UpdateManager> updateManagerProvider;
+
   public MainActivity_MembersInjector(Provider<PosDao> posDaoProvider,
       Provider<P2PConnectivityManager> p2pManagerProvider,
       Provider<SyncManager> syncManagerProvider, Provider<ProfileManager> profileManagerProvider,
       Provider<TransactionRepository> transactionRepositoryProvider,
-      Provider<MenuRepository> menuRepositoryProvider) {
+      Provider<MenuRepository> menuRepositoryProvider,
+      Provider<UpdateManager> updateManagerProvider) {
     this.posDaoProvider = posDaoProvider;
     this.p2pManagerProvider = p2pManagerProvider;
     this.syncManagerProvider = syncManagerProvider;
     this.profileManagerProvider = profileManagerProvider;
     this.transactionRepositoryProvider = transactionRepositoryProvider;
     this.menuRepositoryProvider = menuRepositoryProvider;
+    this.updateManagerProvider = updateManagerProvider;
   }
 
   public static MembersInjector<MainActivity> create(Provider<PosDao> posDaoProvider,
       Provider<P2PConnectivityManager> p2pManagerProvider,
       Provider<SyncManager> syncManagerProvider, Provider<ProfileManager> profileManagerProvider,
       Provider<TransactionRepository> transactionRepositoryProvider,
-      Provider<MenuRepository> menuRepositoryProvider) {
-    return new MainActivity_MembersInjector(posDaoProvider, p2pManagerProvider, syncManagerProvider, profileManagerProvider, transactionRepositoryProvider, menuRepositoryProvider);
+      Provider<MenuRepository> menuRepositoryProvider,
+      Provider<UpdateManager> updateManagerProvider) {
+    return new MainActivity_MembersInjector(posDaoProvider, p2pManagerProvider, syncManagerProvider, profileManagerProvider, transactionRepositoryProvider, menuRepositoryProvider, updateManagerProvider);
   }
 
   @Override
@@ -67,6 +73,7 @@ public final class MainActivity_MembersInjector implements MembersInjector<MainA
     injectProfileManager(instance, profileManagerProvider.get());
     injectTransactionRepository(instance, transactionRepositoryProvider.get());
     injectMenuRepository(instance, menuRepositoryProvider.get());
+    injectUpdateManager(instance, updateManagerProvider.get());
   }
 
   @InjectedFieldSignature("com.curbos.pos.MainActivity.posDao")
@@ -98,5 +105,10 @@ public final class MainActivity_MembersInjector implements MembersInjector<MainA
   @InjectedFieldSignature("com.curbos.pos.MainActivity.menuRepository")
   public static void injectMenuRepository(MainActivity instance, MenuRepository menuRepository) {
     instance.menuRepository = menuRepository;
+  }
+
+  @InjectedFieldSignature("com.curbos.pos.MainActivity.updateManager")
+  public static void injectUpdateManager(MainActivity instance, UpdateManager updateManager) {
+    instance.updateManager = updateManager;
   }
 }

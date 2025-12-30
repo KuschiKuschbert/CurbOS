@@ -187,24 +187,32 @@ class SalesViewModel @javax.inject.Inject constructor(
 
             posDao.insertTransaction(transaction)
 
-            // 1. Send to Repository (Stages + Broadcasts + Syncs)
+            // 1. Send to Repository and wait for Sync result
             com.curbos.pos.common.Logger.d("SalesViewModel", "Creating transaction ${transaction.id}...")
-            transactionRepository.createTransaction(transaction)
+            val result = transactionRepository.createTransaction(transaction)
             
-            // 2. Optimistic UI Update
-            com.curbos.pos.common.SnackbarManager.showSuccess("Order Up! 🌮 (${transaction.paymentMethod})")
-            
-            _uiState.update { 
-                it.copy(
-                    cartItems = emptyList(), 
-                    totalAmount = 0.0, 
-                    isPaymentDialogVisible = false,
-                    customerName = "",
-                    lastTransactionId = transaction.id
-                ) 
+            when (result) {
+                is com.curbos.pos.common.Result.Success -> {
+                    val isSynced = result.data
+                    val message = if (isSynced) "Order Up! 🌮 (${transaction.paymentMethod})" else "Order Saved Locally (Offline) 💾"
+                    
+                    com.curbos.pos.common.SnackbarManager.showSuccess(message)
+                    
+                    _uiState.update { 
+                        it.copy(
+                            cartItems = emptyList(), 
+                            totalAmount = 0.0, 
+                            isPaymentDialogVisible = false,
+                            customerName = "",
+                            lastTransactionId = transaction.id
+                        ) 
+                    }
+                }
+                is com.curbos.pos.common.Result.Error -> {
+                    reportError("Failed to save order: ${result.message}")
+                }
+                else -> {}
             }
-            
-            // 3. Sync Trigger is now inside Repository
         }
     }
 

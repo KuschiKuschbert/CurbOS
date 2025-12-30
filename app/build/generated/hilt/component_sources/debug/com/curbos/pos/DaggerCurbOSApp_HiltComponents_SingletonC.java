@@ -15,10 +15,12 @@ import androidx.work.ListenableWorker;
 import androidx.work.WorkerParameters;
 import com.curbos.pos.data.SyncManager;
 import com.curbos.pos.data.TransactionSyncManager;
+import com.curbos.pos.data.UpdateManager;
 import com.curbos.pos.data.local.AppDatabase;
 import com.curbos.pos.data.local.PosDao;
 import com.curbos.pos.data.p2p.P2PConnectivityManager;
 import com.curbos.pos.data.prefs.ProfileManager;
+import com.curbos.pos.data.remote.GithubApiService;
 import com.curbos.pos.data.repository.AuthRepository;
 import com.curbos.pos.data.repository.AuthRepositoryImpl;
 import com.curbos.pos.data.repository.MenuRepository;
@@ -29,6 +31,7 @@ import com.curbos.pos.data.worker.SyncWorker;
 import com.curbos.pos.data.worker.SyncWorker_AssistedFactory;
 import com.curbos.pos.di.AppModule;
 import com.curbos.pos.di.AppModule_ProvideAppDatabaseFactory;
+import com.curbos.pos.di.AppModule_ProvideGithubApiServiceFactory;
 import com.curbos.pos.di.AppModule_ProvideP2PConnectivityManagerFactory;
 import com.curbos.pos.di.AppModule_ProvidePosDaoFactory;
 import com.curbos.pos.di.AppModule_ProvideProfileManagerFactory;
@@ -460,6 +463,7 @@ public final class DaggerCurbOSApp_HiltComponents_SingletonC {
       MainActivity_MembersInjector.injectProfileManager(instance, singletonCImpl.provideProfileManagerProvider.get());
       MainActivity_MembersInjector.injectTransactionRepository(instance, singletonCImpl.bindTransactionRepositoryProvider.get());
       MainActivity_MembersInjector.injectMenuRepository(instance, singletonCImpl.bindMenuRepositoryProvider.get());
+      MainActivity_MembersInjector.injectUpdateManager(instance, singletonCImpl.updateManagerProvider.get());
       return instance;
     }
   }
@@ -528,7 +532,7 @@ public final class DaggerCurbOSApp_HiltComponents_SingletonC {
       public T get() {
         switch (id) {
           case 0: // com.curbos.pos.ui.viewmodel.AdminViewModel 
-          return (T) new AdminViewModel(singletonCImpl.providePosDaoProvider.get(), singletonCImpl.provideProfileManagerProvider.get(), singletonCImpl.bindTransactionRepositoryProvider.get(), singletonCImpl.bindMenuRepositoryProvider.get());
+          return (T) new AdminViewModel(singletonCImpl.providePosDaoProvider.get(), singletonCImpl.provideProfileManagerProvider.get(), singletonCImpl.bindTransactionRepositoryProvider.get(), singletonCImpl.bindMenuRepositoryProvider.get(), singletonCImpl.updateManagerProvider.get());
 
           case 1: // com.curbos.pos.ui.viewmodel.CustomerDisplayViewModel 
           return (T) new CustomerDisplayViewModel(singletonCImpl.provideP2PConnectivityManagerProvider.get(), singletonCImpl.bindTransactionRepositoryProvider.get());
@@ -540,7 +544,7 @@ public final class DaggerCurbOSApp_HiltComponents_SingletonC {
           return (T) new LoginViewModel(singletonCImpl.bindAuthRepositoryProvider.get(), singletonCImpl.provideProfileManagerProvider.get());
 
           case 4: // com.curbos.pos.ui.viewmodel.SalesViewModel 
-          return (T) new SalesViewModel(singletonCImpl.providePosDaoProvider.get(), singletonCImpl.bindTransactionRepositoryProvider.get(), singletonCImpl.provideP2PConnectivityManagerProvider.get());
+          return (T) new SalesViewModel(singletonCImpl.providePosDaoProvider.get(), singletonCImpl.bindTransactionRepositoryProvider.get(), singletonCImpl.provideP2PConnectivityManagerProvider.get(), singletonCImpl.provideProfileManagerProvider.get());
 
           default: throw new AssertionError(id);
         }
@@ -647,6 +651,10 @@ public final class DaggerCurbOSApp_HiltComponents_SingletonC {
 
     private Provider<MenuRepository> bindMenuRepositoryProvider;
 
+    private Provider<GithubApiService> provideGithubApiServiceProvider;
+
+    private Provider<UpdateManager> updateManagerProvider;
+
     private Provider<AuthRepositoryImpl> authRepositoryImplProvider;
 
     private Provider<AuthRepository> bindAuthRepositoryProvider;
@@ -681,7 +689,9 @@ public final class DaggerCurbOSApp_HiltComponents_SingletonC {
       this.bindTransactionRepositoryProvider = DoubleCheck.provider((Provider) transactionRepositoryImplProvider);
       this.menuRepositoryImplProvider = new SwitchingProvider<>(singletonCImpl, 10);
       this.bindMenuRepositoryProvider = DoubleCheck.provider((Provider) menuRepositoryImplProvider);
-      this.authRepositoryImplProvider = new SwitchingProvider<>(singletonCImpl, 11);
+      this.provideGithubApiServiceProvider = DoubleCheck.provider(new SwitchingProvider<GithubApiService>(singletonCImpl, 12));
+      this.updateManagerProvider = DoubleCheck.provider(new SwitchingProvider<UpdateManager>(singletonCImpl, 11));
+      this.authRepositoryImplProvider = new SwitchingProvider<>(singletonCImpl, 13);
       this.bindAuthRepositoryProvider = DoubleCheck.provider((Provider) authRepositoryImplProvider);
     }
 
@@ -762,7 +772,13 @@ public final class DaggerCurbOSApp_HiltComponents_SingletonC {
           case 10: // com.curbos.pos.data.repository.MenuRepositoryImpl 
           return (T) new MenuRepositoryImpl();
 
-          case 11: // com.curbos.pos.data.repository.AuthRepositoryImpl 
+          case 11: // com.curbos.pos.data.UpdateManager 
+          return (T) new UpdateManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), singletonCImpl.provideGithubApiServiceProvider.get());
+
+          case 12: // com.curbos.pos.data.remote.GithubApiService 
+          return (T) AppModule_ProvideGithubApiServiceFactory.provideGithubApiService();
+
+          case 13: // com.curbos.pos.data.repository.AuthRepositoryImpl 
           return (T) new AuthRepositoryImpl();
 
           default: throw new AssertionError(id);
