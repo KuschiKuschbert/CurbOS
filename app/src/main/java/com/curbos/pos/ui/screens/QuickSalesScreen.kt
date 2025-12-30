@@ -61,7 +61,7 @@ fun getIconForCategory(category: String?): ImageVector {
     val cat = category?.lowercase() ?: ""
     return when {
         cat.contains("taco") -> Icons.Filled.Taco
-        cat.contains("nacho") -> Icons.Filled.Taco // Reusing Taco for now
+        cat.contains("mexican") -> Icons.Filled.Taco
         cat.contains("drink") || cat.contains("beverage") -> Icons.Filled.Soda
         cat.contains("merch") || cat.contains("shirt") -> Icons.Filled.Shirt
         cat.contains("dessert") || cat.contains("cream") -> Icons.Filled.IceCreamCone
