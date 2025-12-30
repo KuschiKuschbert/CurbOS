@@ -24,8 +24,12 @@ class TransactionRepositoryImpl @Inject constructor(
     private fun triggerSync() {
         val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.SECONDS)
+            .addTag("ImmediateSync") // Tag for easier debugging
             .build()
         WorkManager.getInstance(context).enqueue(syncRequest)
+        
+        // Also fire a direct sync in the background to avoid waiting for WorkManager startup delay (if network is already up)
+        // We'll use a detached scope or just let the caller handle it.
     }
 
     override fun getActiveTransactions(): Flow<List<Transaction>> = flow {
@@ -46,6 +50,8 @@ class TransactionRepositoryImpl @Inject constructor(
         return try {
             transactionSyncManager.stageTransaction(transaction)
             triggerSync()
+            // Immediately attempt to process the queue in the current coroutine
+            transactionSyncManager.processQueue()
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(e, "Failed to stage transaction: ${e.message}")
@@ -59,6 +65,7 @@ class TransactionRepositoryImpl @Inject constructor(
              return try {
                 transactionSyncManager.stageTransactionUpdate(updated)
                 triggerSync()
+                transactionSyncManager.processQueue()
                 Result.Success(Unit)
              } catch (e: Exception) {
                 Result.Error(e, "Failed to stage update: ${e.message}")
@@ -72,6 +79,7 @@ class TransactionRepositoryImpl @Inject constructor(
          return try {
             transactionSyncManager.stageTransactionUpdate(transaction)
             triggerSync()
+            transactionSyncManager.processQueue()
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(e, "Failed to stage update: ${e.message}")

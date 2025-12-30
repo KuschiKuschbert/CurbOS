@@ -66,9 +66,11 @@ class MainActivity : AppCompatActivity() {
     @javax.inject.Inject lateinit var menuRepository: com.curbos.pos.data.repository.MenuRepository
     @javax.inject.Inject lateinit var updateManager: com.curbos.pos.data.UpdateManager
 
-    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Ensure Supabase is initialized on the Main thread (required for Auth lifecycle observers)
+        com.curbos.pos.data.remote.SupabaseManager.init(this)
         
         // Schedule Periodic Sync (Every 15 minutes)
         val periodicSyncRequest = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)

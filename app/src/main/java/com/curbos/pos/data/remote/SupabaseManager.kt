@@ -29,21 +29,32 @@ object SupabaseManager {
     // For local dev with emulator, use 10.0.2.2 instead of localhost
     // private const val SUPABASE_URL_LOCAL = "http://10.0.2.2:54321" 
 
-    val client: SupabaseClient = createSupabaseClient(
-        supabaseUrl = SUPABASE_URL,
-        supabaseKey = SUPABASE_KEY
-    ) {
-        httpEngine = CIO.create()
-        defaultSerializer = KotlinXSerializer(kotlinx.serialization.json.Json {
-            ignoreUnknownKeys = true
-            // CRITICAL: encodeDefaults = true is required for Supabase INSERTs.
-            // Without this, default values (like fulfillmentStatus="PENDING") are omitted from the JSON,
-            // causing Supabase to use NULL (if no DB default) or blocking RLS/Filters.
-            encodeDefaults = true 
-        })
-        install(Postgrest)
-        install(Realtime)
-        install(Auth) // Auth
+    // Use a lazy delegate so we can ensure initialization happens on the Main thread 
+    // if accessed from there, or we can pre-init it safely.
+    val client: SupabaseClient by lazy {
+        createSupabaseClient(
+            supabaseUrl = SUPABASE_URL,
+            supabaseKey = SUPABASE_KEY
+        ) {
+            httpEngine = CIO.create()
+            defaultSerializer = KotlinXSerializer(kotlinx.serialization.json.Json {
+                ignoreUnknownKeys = true
+                encodeDefaults = true 
+            })
+            install(Postgrest)
+            install(Realtime)
+            install(Auth)
+        }
+    }
+
+    /**
+     * Pre-initializes the Supabase client.
+     * MUST be called from the Main thread because Supabase Auth 
+     * registers lifecycle observers.
+     */
+    fun init(context: android.content.Context) {
+        // Just accessing the lazy property triggers initialization
+        val dummy = client
     }
 
     // Auth0 Login (Exchange ID Token)
@@ -79,15 +90,15 @@ object SupabaseManager {
             // However, the user provided "SUPABASE_SERVICE_ROLE_KEY" in the env.
             // We should NOT use that in the Android app.
             
-            // Try fetching with current client (Anon).
-            val user = client.postgrest["users"]
+            // Try fetching from 'user_settings' (suggested by Supabase logs as the correct table)
+            val user = client.postgrest["user_settings"]
                 .select {
                     filter {
                         eq("email", email)
                     }
                     limit(1)
                 }
-                .decodeSingleOrNull<Map<String, String>>() // Decode dynamically as we just need fields
+                .decodeSingleOrNull<Map<String, String>>()
 
             if (user == null) {
                  // User not found in Supabase (Auth0 sync delay?)
