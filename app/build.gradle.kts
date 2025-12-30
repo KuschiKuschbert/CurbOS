@@ -1,3 +1,6 @@
+import java.util.Date
+import java.text.SimpleDateFormat
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -86,7 +89,7 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
         debug {
-            val date = java.text.SimpleDateFormat("yyyyMMdd-HH").format(java.util.Date())
+            val date = SimpleDateFormat("yyyyMMdd-HH").format(Date())
             versionNameSuffix = "-nightly-$date"
             applicationIdSuffix = ".debug"
         }
