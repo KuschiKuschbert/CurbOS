@@ -14,6 +14,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
 
     - name: set up JDK 17
       uses: actions/setup-java@v3
@@ -30,6 +32,18 @@ jobs:
         echo "sdk.dir=$ANDROID_HOME" > local.properties
         echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> local.properties
         echo "SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}" >> local.properties
+
+    - name: Generate Changelog
+      id: changelog
+      run: |
+        git fetch --tags --force
+        if git rev-parse nightly >/dev/null 2>&1; then
+          echo "Changes since last nightly:" > CHANGELOG.txt
+          git log nightly..HEAD --oneline --no-merges >> CHANGELOG.txt
+        else
+          echo "Initial build - recent changes:" > CHANGELOG.txt
+          git log --oneline -n 15 --no-merges >> CHANGELOG.txt
+        fi
 
     - name: Extract Version Name
       id: extract_version
@@ -54,7 +68,7 @@ jobs:
       with:
         tag_name: nightly
         name: Nightly Debug Build
-        body: "Latest debug build from main branch.\nVersion: ${{ env.VERSION_NAME }}\nBuilt at: $(date)"
+        body_path: CHANGELOG.txt
         files: app/build/outputs/apk/debug/app-debug.apk
         prerelease: true
         make_latest: false
