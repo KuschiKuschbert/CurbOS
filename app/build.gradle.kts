@@ -12,6 +12,12 @@ import java.io.FileInputStream
 
 // ... (existing code)
 
+val properties = Properties()
+val localPropertiesFile = project.rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    properties.load(FileInputStream(localPropertiesFile))
+}
+
 dependencies {
     // ... (existing dependencies)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
@@ -40,12 +46,7 @@ android {
         }
         manifestPlaceholders["auth0Domain"] = "dev-7myakdl4itf644km.us.auth0.com"
         manifestPlaceholders["auth0Scheme"] = "demo"
-        // Enterprise Security: Read secrets from local.properties
-        val properties = Properties()
-        val localPropertiesFile = project.rootProject.file("local.properties")
-        if (localPropertiesFile.exists()) {
-            properties.load(FileInputStream(localPropertiesFile))
-        }
+        // Enterprise Security: Read secrets from local.properties (loaded at top level)
 
         val supabaseUrl = properties.getProperty("SUPABASE_URL") ?: ""
         val supabaseKey = properties.getProperty("SUPABASE_KEY") ?: ""
