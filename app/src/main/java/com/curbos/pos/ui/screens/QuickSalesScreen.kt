@@ -639,6 +639,36 @@ fun MenuContent(
             }
         }
     }
+    }
+
+    
+    // Powered by Prepflow Branding (Bottom of Menu Grid)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp, bottom = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.alpha(0.4f)
+        ) {
+            Text(
+                text = "Powered by",
+                color = Color.Gray,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(end = 4.dp)
+            )
+             androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(id = com.curbos.pos.R.drawable.prepflow_logo),
+                contentDescription = "Prepflow Logo",
+                modifier = Modifier.height(14.dp),
+                contentScale = androidx.compose.ui.layout.ContentScale.Fit
+            )
+        }
+    }
 }
 
 @Composable

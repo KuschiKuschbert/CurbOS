@@ -3,6 +3,7 @@ package com.curbos.pos.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -136,6 +137,35 @@ fun LoginScreen(
                             fontWeight = FontWeight.Black
                         )
                     }
+                }
+            }
+            }
+            
+            // Powered by Prepflow Branding
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 32.dp),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.alpha(0.6f)
+                ) {
+                    Text(
+                        text = "Powered by",
+                        color = Color.Gray,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                      androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(id = com.curbos.pos.R.drawable.prepflow_logo),
+                        contentDescription = "Prepflow Logo",
+                        modifier = Modifier.height(20.dp),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                    )
                 }
             }
         }
