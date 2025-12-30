@@ -71,9 +71,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Ensure Supabase is initialized on the Main thread (required for Auth lifecycle observers)
-        // Initialize Supabase
-        SupabaseManager.init()
+        
+        // Ensure Supabase is initialized via CurbOSApplication now
+        // SupabaseManager.init() - Moved to Application class
         
         // Schedule Periodic Sync (Every 15 minutes)
         val periodicSyncRequest = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)

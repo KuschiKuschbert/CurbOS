@@ -30,7 +30,7 @@
     </queries>
 
     <application
-        android:name=".CurbOSApp"
+        android:name=".CurbOSApplication"
         android:allowBackup="false"
         android:fullBackupContent="false"
         android:icon="@mipmap/ic_launcher"
