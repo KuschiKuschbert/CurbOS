@@ -1,5 +1,14 @@
 import java.util.Date
 import java.text.SimpleDateFormat
+
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("com.google.devtools.ksp")
+    id("kotlin-parcelize")
+    id("org.jetbrains.kotlin.plugin.serialization")
+    id("com.google.dagger.hilt.android")
+}
 // import java.io.ByteArrayOutputStream // Removed
 
 // Helper to get git commit count
