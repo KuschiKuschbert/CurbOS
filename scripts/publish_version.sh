@@ -40,6 +40,29 @@ else
     exit 1
 fi
 
+echo "🧹 Cleaning project to ensure fresh build..."
+# Run from project root (assumed script is in scripts/ or root, handled by relative paths usually, but let's be safe)
+# The script usually runs from root or scripts.
+# Let's determine project root.
+PROJECT_ROOT=$(dirname "$(dirname "$(realpath "$0")")")
+cd "$PROJECT_ROOT"
+
+if ./gradlew clean; then
+    echo "✅ Project cleaned."
+else
+    echo "❌ Gradle clean failed."
+    exit 1
+fi
+
+echo "🏗️  Building Release APK..."
+# Changing to assembleRelease as this is a publish script.
+if ./gradlew assembleRelease; then
+    echo "✅ Release APK built successfully."
+else
+    echo "❌ Build failed. Aborting publish."
+    exit 1
+fi
+
 # 2. Update Supabase
 # We need SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
 if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then

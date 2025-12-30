@@ -32,6 +32,23 @@ dependencies {
     // ...
 }
 
+// Helper to get git commit count
+fun getGitCommitCount(): Int {
+    return try {
+        val stdout = java.io.ByteArrayOutputStream()
+        // Use Runtime.getRuntime().exec for simpler non-project context if needed, 
+        // but 'exec' works at top level in build.gradle.kts as it delegates to project.
+        // using ProcessBuilder for pure Kotlin/Java safety if 'exec' is ambiguous
+        val process = ProcessBuilder("git", "rev-list", "--count", "HEAD")
+            .redirectErrorStream(true)
+            .start()
+        process.waitFor()
+        process.inputStream.bufferedReader().readText().trim().toInt()
+    } catch (e: Exception) {
+        1 // Fallback
+    }
+}
+
 android {
     namespace = "com.curbos.pos"
     compileSdk = 34
@@ -40,7 +57,8 @@ android {
         applicationId = "com.curbos.pos"
         minSdk = 26
         targetSdk = 34
-        versionCode = 14
+        
+        versionCode = getGitCommitCount()
         versionName = "0.2.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

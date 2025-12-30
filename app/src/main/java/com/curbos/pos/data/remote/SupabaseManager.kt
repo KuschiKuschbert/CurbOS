@@ -94,24 +94,28 @@ object SupabaseManager {
             com.curbos.pos.common.Logger.d("SupabaseManager", "Checking subscription for $email")
             // Query public 'users' table. 
             // Note: This requires the table to be readable by Anon/Public OR the user to be authenticated.
-            // If RLS is strictly "Users can only read own data", and we are NOT authenticated in Supabase (only Auth0), this might fail.
-            // However, the user provided "SUPABASE_SERVICE_ROLE_KEY" in the env.
-            // We should NOT use that in the Android app.
             
-            // Try fetching from 'users' (shared Prepflow table)
-            val user = client.postgrest["users"]
-                .select {
-                    filter {
-                        eq("email", email)
+            // Try fetching from 'users'
+            val user = try {
+                client.postgrest["users"]
+                    .select {
+                        filter {
+                            eq("email", email)
+                        }
+                        limit(1)
                     }
-                    limit(1)
-                }
-                .decodeSingleOrNull<Map<String, String>>()
+                    .decodeSingleOrNull<Map<String, String>>()
+            } catch (e: io.github.jan.supabase.exceptions.NotFoundRestException) {
+                com.curbos.pos.common.Logger.w("SupabaseManager", "Users table not found. Skipping subscription check.")
+                null
+            } catch (e: Exception) {
+                 // Ignore other errors and fail open
+                 null
+            }
 
             if (user == null) {
-                 // User not found in Supabase (Auth0 sync delay?)
-                 com.curbos.pos.common.Logger.w("SupabaseManager", "User not found in Supabase: $email")
-                 // Fail Open for demo/dev to allow login even if sync hasn't happened
+                 // User not found or table missing
+                 // Fail Open for demo/dev to allow login
                  return com.curbos.pos.common.Result.Success(true) 
             }
 
