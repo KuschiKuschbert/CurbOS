@@ -50,10 +50,11 @@ class TransactionRepositoryImpl @Inject constructor(
         return try {
             transactionSyncManager.stageTransaction(transaction)
             triggerSync()
-            // Immediately attempt to process the queue in the current coroutine
-            // Return true if sync was successful, false if it stays offline
-            val isSynced = transactionSyncManager.processQueueWithResult()
-            Result.Success(isSynced)
+            
+            // Fire-and-forget processQueue for immediate retry (non-blocking)
+            // We return Success(true) optimistically because it's safely staged in local DB.
+            // If the user's connection is broken, it will sync eventually in background.
+            Result.Success(true)
         } catch (e: Exception) {
             Result.Error(e, "Failed to stage transaction: ${e.message}")
         }

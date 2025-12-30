@@ -193,8 +193,7 @@ class SalesViewModel @javax.inject.Inject constructor(
             
             when (result) {
                 is com.curbos.pos.common.Result.Success -> {
-                    val isSynced = result.data
-                    val message = if (isSynced) "Order Up! 🌮 (${transaction.paymentMethod})" else "Order Saved Locally (Offline) 💾"
+                    val message = "Order Up! 🌮 (${transaction.paymentMethod})"
                     
                     com.curbos.pos.common.SnackbarManager.showSuccess(message)
                     
