@@ -29,13 +29,7 @@ class CurbOSApp : Application(), androidx.work.Configuration.Provider {
     }
 
     private fun setupGlobalErrorHandler() {
-        // This catches unhandled exceptions in the CoroutineScope of the app (if any)
-        // For truly global (including UI thread crashes), we'd use Thread.setDefaultUncaughtExceptionHandler
-        val handler = kotlinx.coroutines.CoroutineExceptionHandler { _, throwable ->
-            com.curbos.pos.common.Logger.e("GlobalError", "Unhandled exception caught", throwable)
-        }
-        
-        // We can also set the default uncaught exception handler for the entire process
+        // We set the default uncaught exception handler for the entire process
         val originalHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             com.curbos.pos.common.Logger.e("Crash", "FATAL CRASH on thread ${thread.name}", throwable)
