@@ -5,6 +5,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageInstaller
+import android.app.PendingIntent
 import android.net.Uri
 import android.os.Environment
 import androidx.core.content.ContextCompat
@@ -62,7 +64,7 @@ class UpdateManager @Inject constructor(
         
         // Visual Feedback
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
-            com.curbos.pos.common.SnackbarManager.showMessage("Downloading update... Check notification bar ⬇️")
+            com.curbos.pos.common.SnackbarManager.showMessage("Downloading update... ⬇️")
         }
 
         val request = DownloadManager.Request(Uri.parse(downloadUrl))
@@ -76,25 +78,18 @@ class UpdateManager @Inject constructor(
         val downloadId = dm.enqueue(request)
 
         // Register receiver for when download is complete
-        // We use the application context here via the injected 'context' field
         val onComplete = object : BroadcastReceiver() {
             override fun onReceive(ctxt: Context, intent: Intent) {
                 val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
                 if (id == downloadId) {
-                    // Start installation immediately
                     installApk(fileName, context)
-                    
-                    // Unregister self to avoid leaks
                     try {
                         context.unregisterReceiver(this)
-                    } catch (e: Exception) {
-                        // Ignore if already unregistered
-                    }
+                    } catch (e: Exception) { /* already removed */ }
                 }
             }
         }
         
-        // Register receiver with the Application Context
         ContextCompat.registerReceiver(
             context, 
             onComplete, 
@@ -105,19 +100,75 @@ class UpdateManager @Inject constructor(
 
     private fun installApk(fileName: String, context: Context) {
         val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
+        if (!file.exists()) return
+
+        val packageInstaller = context.packageManager.packageInstaller
+        val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
         
-        if (file.exists()) {
-            val uri = FileProvider.getUriForFile(
+        // API 31+ (Android 12) supports unattended updates if certain conditions are met
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            params.setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
+        }
+
+        try {
+            val sessionId = packageInstaller.createSession(params)
+            val session = packageInstaller.openSession(sessionId)
+            
+            file.inputStream().use { inputStream ->
+                session.openWrite("curbos_install", 0, file.length()).use { outputStream ->
+                    inputStream.copyTo(outputStream)
+                    session.fsync(outputStream)
+                }
+            }
+
+            val intent = Intent(context, InstallStatusReceiver::class.java)
+            val pendingIntent = android.app.PendingIntent.getBroadcast(
                 context,
-                "${context.packageName}.provider",
-                file
+                sessionId,
+                intent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_MUTABLE
             )
 
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "application/vnd.android.package-archive")
-                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
+            session.commit(pendingIntent.intentSender)
+            session.close()
+            
+            com.curbos.pos.common.Logger.i("UpdateManager", "Update session $sessionId committed")
+        } catch (e: Exception) {
+            com.curbos.pos.common.Logger.e("UpdateManager", "Failed to install update", e)
+        }
+    }
+}
+
+/**
+ * Receiver to handle the status of the PackageInstaller session.
+ * This is outside the main class to be easily registered in Manifest if needed, 
+ * or purely used via PendingIntent.
+ */
+class InstallStatusReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)
+        val message = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
+        
+        when (status) {
+            PackageInstaller.STATUS_SUCCESS -> {
+                com.curbos.pos.common.Logger.i("InstallStatus", "Update successful!")
             }
-            context.startActivity(intent)
+            PackageInstaller.STATUS_PENDING_USER_ACTION -> {
+                // If unattended was denied/not supported, fallback to system dialog
+                val confirmIntent = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra(Intent.EXTRA_INTENT)
+                }
+                confirmIntent?.let {
+                    it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(confirmIntent)
+                }
+            }
+            else -> {
+                com.curbos.pos.common.Logger.e("InstallStatus", "Update failed ($status): $message")
+            }
         }
     }
 }
