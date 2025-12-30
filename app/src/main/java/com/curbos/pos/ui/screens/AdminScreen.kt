@@ -180,13 +180,68 @@ fun AdminScreen(
             }
             
             Spacer(modifier = Modifier.height(32.dp))
+
+            Spacer(modifier = Modifier.height(32.dp))
+            
+            // --- APP UPDATE ---
+            Text("App Updates", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Auto-Update System", color = Color.White, fontWeight = FontWeight.Bold)
+                            val currentVersion = com.curbos.pos.BuildConfig.VERSION_NAME
+                            Text("Current Version: $currentVersion", color = Color.Gray, fontSize = 12.sp)
+                        }
+                        
+                        if (uiState.isUpdateAvailable) {
+                            Button(
+                                onClick = { viewModel.installUpdate() },
+                                colors = ButtonDefaults.buttonColors(containerColor = SafetyOrange)
+                            ) {
+                                Text("UPDATE NOW")
+                            }
+                        } else {
+                            OutlinedButton(
+                                onClick = { viewModel.checkForUpdates() }
+                            ) {
+                                Text("CHECK FOR UPDATE")
+                            }
+                        }
+                    }
+                    
+                    if (uiState.isUpdateAvailable) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "New version ${uiState.latestRelease?.tagName} available!",
+                            color = SafetyOrange,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
             
             // --- SETTINGS ---
             Text("Settings", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
             Spacer(modifier = Modifier.height(16.dp))
             
             Row(
-                modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)).padding(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+                    .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {

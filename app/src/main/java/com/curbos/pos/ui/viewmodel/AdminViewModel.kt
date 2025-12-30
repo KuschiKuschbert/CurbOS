@@ -21,7 +21,9 @@ data class AdminUiState(
     val isLoading: Boolean = false,
     val totalRevenue: Double = 0.0,
     val totalTx: Int = 0,
-    val isSimplifiedKds: Boolean = false
+    val isSimplifiedKds: Boolean = false,
+    val isUpdateAvailable: Boolean = false,
+    val latestRelease: com.curbos.pos.data.remote.GithubRelease? = null
 )
 
 @dagger.hilt.android.lifecycle.HiltViewModel
@@ -29,7 +31,8 @@ class AdminViewModel @javax.inject.Inject constructor(
     private val posDao: PosDao,
     private val profileManager: com.curbos.pos.data.prefs.ProfileManager,
     private val transactionRepository: com.curbos.pos.data.repository.TransactionRepository,
-    private val menuRepository: com.curbos.pos.data.repository.MenuRepository
+    private val menuRepository: com.curbos.pos.data.repository.MenuRepository,
+    private val updateManager: com.curbos.pos.data.UpdateManager
 ) : BaseViewModel() {
 
     private val _uiState = MutableStateFlow(AdminUiState())
@@ -171,6 +174,30 @@ class AdminViewModel @javax.inject.Inject constructor(
             }
             
             _uiState.update { it.copy(isLoading = false) }
+        }
+    }
+
+    fun checkForUpdates() {
+        _uiState.update { it.copy(isLoading = true) }
+        viewModelScope.launch {
+            val release = updateManager.checkForUpdate()
+            _uiState.update { 
+                it.copy(
+                    isLoading = false,
+                    isUpdateAvailable = release != null,
+                    latestRelease = release
+                ) 
+            }
+            if (release == null) {
+                SnackbarManager.showMessage("App is up to date")
+            }
+        }
+    }
+
+    fun installUpdate() {
+        val asset = uiState.value.latestRelease?.assets?.firstOrNull { it.name.endsWith(".apk") }
+        if (asset != null) {
+            updateManager.downloadAndInstall(asset.downloadUrl)
         }
     }
 }
