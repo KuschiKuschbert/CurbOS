@@ -59,10 +59,31 @@ android {
         buildConfig = true // Enable BuildConfig generation
     }
 
+    signingConfigs {
+        create("release") {
+            // Priority: Environment Variables (CI/CD) -> local.properties (Dev)
+            val keystoreFile = if (System.getenv("CI") == "true") {
+                 file("keystore.jks") // In CI, we decode to root of app dir
+            } else {
+                 file("../release.jks") // Local dev expectation
+            }
+            
+            if (keystoreFile.exists()) {
+                storeFile = keystoreFile
+                storePassword = System.getenv("SIGNING_STORE_PASSWORD") ?: properties.getProperty("storePassword")
+                keyAlias = System.getenv("SIGNING_KEY_ALIAS") ?: properties.getProperty("keyAlias")
+                keyPassword = System.getenv("SIGNING_KEY_PASSWORD") ?: properties.getProperty("keyPassword")
+            } else {
+                 println("Release keystore not found at ${keystoreFile.absolutePath}, skipping signing config.")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
