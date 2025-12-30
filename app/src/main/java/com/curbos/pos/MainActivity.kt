@@ -260,9 +260,6 @@ class MainActivity : AppCompatActivity() {
                 
                 val navController = rememberNavController()
 
-                // Determine start destination based on profile
-                val startDest = if (profileManager.getChefName() == null) "login" else "welcome"
-                
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
                 val showNav = currentRoute !in listOf("splash", "login", "welcome")
