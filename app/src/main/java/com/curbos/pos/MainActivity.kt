@@ -66,6 +66,7 @@ class MainActivity : AppCompatActivity() {
     @javax.inject.Inject lateinit var menuRepository: com.curbos.pos.data.repository.MenuRepository
     @javax.inject.Inject lateinit var updateManager: com.curbos.pos.data.UpdateManager
 
+    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
