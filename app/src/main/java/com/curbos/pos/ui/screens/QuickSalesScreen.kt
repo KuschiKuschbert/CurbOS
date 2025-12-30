@@ -352,10 +352,15 @@ fun QuickSalesScreen(
                                             }
                                             showCartSheet = false
                                             if (type == "CARD") {
-                                                val surcharge = uiState.totalAmount * 0.022
-                                                val totalWithSurcharge = uiState.totalAmount + surcharge
-                                                val amountCents = (totalWithSurcharge * 100).toInt()
-                                                launchSquarePayment(amountCents)
+                                                val validPackage = com.curbos.pos.util.SquareHelper.findSquarePackage(context)
+                                                if (validPackage != null) {
+                                                    val surcharge = uiState.totalAmount * 0.022
+                                                    val totalWithSurcharge = uiState.totalAmount + surcharge
+                                                    val amountCents = (totalWithSurcharge * 100).toInt()
+                                                    launchSquarePayment(amountCents)
+                                                } else {
+                                                    viewModel.reportError("Square POS app not found for Card payment")
+                                                }
                                             }
                                             else viewModel.processPayment(type)
                                         }
@@ -379,10 +384,15 @@ fun QuickSalesScreen(
                     return@PaymentSelectionDialog
                 }
                 if (method == "CARD") {
-                    val surcharge = uiState.totalAmount * 0.022
-                    val totalWithSurcharge = uiState.totalAmount + surcharge
-                    val amountCents = (totalWithSurcharge * 100).toInt()
-                    launchSquarePayment(amountCents)
+                    val validPackage = com.curbos.pos.util.SquareHelper.findSquarePackage(context)
+                    if (validPackage != null) {
+                        val surcharge = uiState.totalAmount * 0.022
+                        val totalWithSurcharge = uiState.totalAmount + surcharge
+                        val amountCents = (totalWithSurcharge * 100).toInt()
+                        launchSquarePayment(amountCents)
+                    } else {
+                        viewModel.reportError("Square POS app not found for Card payment")
+                    }
                 } else {
                    viewModel.processPayment(method)
                 }
