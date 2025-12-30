@@ -74,11 +74,18 @@ fun SplashScreen(onTimeout: () -> Unit) {
                 fontSize = 48.sp,
                 fontWeight = FontWeight.Bold
             )
+            Spacer(modifier = Modifier.height(32.dp))
             Text(
                 text = "POS SYSTEM",
                 color = Color.White.copy(alpha = 0.7f),
                 fontSize = 16.sp,
                 modifier = Modifier.padding(top = 16.dp)
+            )
+            Text(
+                text = "v${com.curbos.pos.BuildConfig.VERSION_NAME}",
+                color = Color.White.copy(alpha = 0.4f),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 32.dp)
             )
         }
     }
