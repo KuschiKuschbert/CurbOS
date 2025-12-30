@@ -11,7 +11,6 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.dagger.hilt.android")
 }
-// import java.io.ByteArrayOutputStream // Removed
 
 // Helper to get git commit count
 fun getGitCommitCount(): Int {
