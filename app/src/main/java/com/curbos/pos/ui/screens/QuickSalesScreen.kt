@@ -415,20 +415,16 @@ fun QuickSalesScreen(
     // (State hoisted to top of composable)
 
     
-    if (showRecentOrders) {
-         // In a real app, you might fetch this list from stats or local DB properly
-         // For now, we assume ViewModel or DAO provides a way. 
-         // Since 'recent transactions' isn't fully piped in SalesUiState, we'll auto-close or implemented basic list if available.
-         // Given scope, I'll implement a simple placeholder or modify ViewModel to provide it.
-         // Let's rely on a new composable that fetches on mount if possible, or just skip for now and focus purely on success dialog.
-         // User asked for "Recent Orders" button to reopen code. 
-         // I'll add the button first, and if clicked, just show a "Not Implemented" toast or basic list if I can.
-         // Actually, let's implement a basic RecentTransactionListDialog.
-         
-         RecentTransactionsDialog(
+     if (showRecentOrders) {
+          RecentTransactionsDialog(
+            transactions = uiState.recentTransactions,
+            onTransactionClick = { id ->
+                viewModel.reopenTransaction(id)
+                showRecentOrders = false
+            },
             onDismiss = { showRecentOrders = false }
-         )
-    }
+          )
+     }
 
     // Modifier Dialog
     if (showModifierDialog && selectedMenuItem != null) {
@@ -528,34 +524,89 @@ fun TransactionSuccessDialog(
 
 @Composable
 fun RecentTransactionsDialog(
+    transactions: List<com.curbos.pos.data.model.Transaction>,
+    onTransactionClick: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
      Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface,
+            color = Color(0xFF1E1E1E),
             modifier = Modifier.fillMaxWidth().heightIn(max = 500.dp)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
-                Text("Recent Orders", style = MaterialTheme.typography.headlineSmall, color = Color.White)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Recent Orders", style = MaterialTheme.typography.headlineSmall, color = Color.White)
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.Gray)
+                    }
+                }
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                // Placeholder List (Normally fetch from DB/ViewModel)
-                // Since we don't have easy access to historical list in UI state, 
-                // and adding it to viewmodel requires more file edits, I will show a message for now
-                // or just rely on the 'reopen' logic if the viewmodel supported it.
-                // To properly implement, I'd need to edit SalesViewModel to expose `recentTransactions`.
-                // For this step, I'll add the UI scaffold.
-                
-                Text("feature coming soon", color = Color.Gray)
+                if (transactions.isEmpty()) {
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Text("No recent orders found", color = Color.Gray)
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(transactions) { tx ->
+                            RecentTransactionItem(tx, onClick = { onTransactionClick(tx.id) })
+                        }
+                    }
+                }
                 
                 Spacer(modifier = Modifier.height(24.dp))
-                Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                    Text("Close")
+                Button(
+                    onClick = onDismiss, 
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)
+                ) {
+                    Text("Close", color = Color.White)
                 }
             }
         }
      }
+}
+
+@Composable
+fun RecentTransactionItem(
+    transaction: com.curbos.pos.data.model.Transaction,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "#${transaction.orderNumber} - ${transaction.customerName ?: "Guest"}",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "${transaction.paymentMethod} • $${"%.2f".format(transaction.totalAmount)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
+            Icon(Icons.Default.History, contentDescription = null, tint = ElectricLime.copy(alpha = 0.5f))
+        }
+    }
 }
 
 fun generateQrCode(content: String): androidx.compose.ui.graphics.ImageBitmap? {
@@ -652,32 +703,21 @@ fun MenuContent(
     }
 
     
-    // Powered by Prepflow Branding (Bottom of Menu Grid)
+    // CurbOS Branding (Bottom of Menu Grid)
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 16.dp, bottom = 8.dp),
         contentAlignment = Alignment.Center
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.alpha(0.4f)
-        ) {
-            Text(
-                text = "Powered by",
-                color = Color.Gray,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(end = 4.dp)
-            )
-             androidx.compose.foundation.Image(
-                painter = androidx.compose.ui.res.painterResource(id = com.curbos.pos.R.drawable.prepflow_logo),
-                contentDescription = "Prepflow Logo",
-                modifier = Modifier.height(14.dp),
-                contentScale = androidx.compose.ui.layout.ContentScale.Fit
-            )
-        }
+        Text(
+            text = "CURBOS",
+            color = Color.Gray,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 2.sp,
+            modifier = Modifier.alpha(0.3f)
+        )
     }
 }
 

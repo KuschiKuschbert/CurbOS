@@ -28,7 +28,8 @@ data class SalesUiState(
     val customerName: String = "",
     val lastTransactionId: String? = null,
     val unsyncedCount: Int = 0,
-    val webBaseUrl: String = "https://prepflow.org"
+    val webBaseUrl: String = "https://prepflow.org",
+    val recentTransactions: List<Transaction> = emptyList()
 )
 
 @dagger.hilt.android.lifecycle.HiltViewModel
@@ -52,6 +53,13 @@ class SalesViewModel @javax.inject.Inject constructor(
         
         // Initial load of Web URL
         _uiState.update { it.copy(webBaseUrl = profileManager.getWebBaseUrl()) }
+
+        // Observe Recent Transactions
+        viewModelScope.launch {
+            posDao.getAllTransactions().collect { transactions ->
+                _uiState.update { it.copy(recentTransactions = transactions.take(20)) }
+            }
+        }
     }
 
     // Helper to broadcast cart

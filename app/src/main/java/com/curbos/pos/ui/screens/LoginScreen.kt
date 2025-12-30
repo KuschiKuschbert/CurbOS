@@ -140,37 +140,18 @@ fun LoginScreen(
                 }
             }
             
-            // Powered by Prepflow Branding
+            // Version Display
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(bottom = 32.dp),
                 contentAlignment = Alignment.BottomCenter
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier.alpha(0.6f)
-                ) {
-                    Text(
-                        text = "Powered by",
-                        color = Color.Gray,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-                      androidx.compose.foundation.Image(
-                        painter = androidx.compose.ui.res.painterResource(id = com.curbos.pos.R.drawable.prepflow_logo),
-                        contentDescription = "Prepflow Logo",
-                        modifier = Modifier.height(20.dp),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Fit
-                    )
-                }
                 Text(
                     text = "v${com.curbos.pos.BuildConfig.VERSION_NAME}",
-                    color = Color.White.copy(alpha = 0.6f),
+                    color = Color.White.copy(alpha = 0.4f),
                     fontSize = 12.sp,
-                    modifier = Modifier.padding(top = 8.dp)
+                    fontWeight = FontWeight.Bold
                 )
             }
         }

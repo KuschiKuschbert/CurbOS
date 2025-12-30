@@ -1,0 +1,30 @@
+name: Bump Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      new_version:
+        description: 'New version number (e.g., 0.2.4)'
+        required: true
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Update Version
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          chmod +x scripts/publish_version.sh
+          ./scripts/publish_version.sh ${{ github.event.inputs.new_version }}
+          
+      - name: Commit changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add app/build.gradle.kts
+          git commit -m "chore: bump version to ${{ github.event.inputs.new_version }}"
+          git push
