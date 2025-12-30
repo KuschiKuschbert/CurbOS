@@ -95,8 +95,8 @@ object SupabaseManager {
             // However, the user provided "SUPABASE_SERVICE_ROLE_KEY" in the env.
             // We should NOT use that in the Android app.
             
-            // Try fetching from 'user_settings' (suggested by Supabase logs as the correct table)
-            val user = client.postgrest["user_settings"]
+            // Try fetching from 'users' (shared Prepflow table)
+            val user = client.postgrest["users"]
                 .select {
                     filter {
                         eq("email", email)
