@@ -287,9 +287,9 @@ object SupabaseManager {
                     filter {
                         neq("fulfillment_status", "COMPLETED")
                     }
-                    order("timestamp", io.github.jan.supabase.postgrest.query.Order.ASCENDING)
                 }
                 .decodeList<Transaction>()
+                .sortedBy { it.timestamp }
             
             com.curbos.pos.common.Logger.d("SupabaseManager", "Fetched ${items.size} active items.")
             com.curbos.pos.common.Result.Success(items)
