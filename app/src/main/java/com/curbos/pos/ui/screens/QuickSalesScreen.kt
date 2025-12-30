@@ -394,6 +394,7 @@ fun QuickSalesScreen(
     if (uiState.lastTransactionId != null) {
         TransactionSuccessDialog(
             transactionId = uiState.lastTransactionId!!,
+            webBaseUrl = uiState.webBaseUrl,
             onDismiss = { viewModel.resetTransactionState() }
         )
     }
@@ -445,6 +446,7 @@ fun QuickSalesScreen(
 @Composable
 fun TransactionSuccessDialog(
     transactionId: String,
+    webBaseUrl: String,
     onDismiss: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
@@ -489,7 +491,7 @@ fun TransactionSuccessDialog(
                 
                 // QR Code Generation
                 val qrBitmap = remember(transactionId) {
-                    generateQrCode("${uiState.webBaseUrl}/curbos/order/$transactionId")
+                    generateQrCode("$webBaseUrl/curbos/order/$transactionId")
                 }
                 
                 if (qrBitmap != null) {
