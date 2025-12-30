@@ -2,5 +2,6 @@
 <resources>
     <style name="Theme.CurbOS" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/curbos_logo</item>
     </style>
 </resources>

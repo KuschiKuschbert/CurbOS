@@ -71,9 +71,9 @@ android {
             
             if (keystoreFile.exists()) {
                 storeFile = keystoreFile
-                storePassword = System.getenv("SIGNING_STORE_PASSWORD") ?: properties["storePassword"]?.toString()
-                keyAlias = System.getenv("SIGNING_KEY_ALIAS") ?: properties["keyAlias"]?.toString()
-                keyPassword = System.getenv("SIGNING_KEY_PASSWORD") ?: properties["keyPassword"]?.toString()
+                storePassword = System.getenv("SIGNING_STORE_PASSWORD") ?: properties["storePassword"]?.toString() ?: "CurbOS_Secure_2025!"
+                keyAlias = System.getenv("SIGNING_KEY_ALIAS") ?: properties["keyAlias"]?.toString() ?: "key0"
+                keyPassword = System.getenv("SIGNING_KEY_PASSWORD") ?: properties["keyPassword"]?.toString() ?: "CurbOS_Secure_2025!"
             } else {
                  println("Release keystore not found at ${keystoreFile.absolutePath}, skipping signing config.")
             }
@@ -89,7 +89,8 @@ android {
         debug {
             val date = SimpleDateFormat("yyyyMMdd-HH").format(Date())
             versionNameSuffix = "-nightly-$date"
-            applicationIdSuffix = ".debug"
+            // applicationIdSuffix = ".debug" // Removed to ensure single installation
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
