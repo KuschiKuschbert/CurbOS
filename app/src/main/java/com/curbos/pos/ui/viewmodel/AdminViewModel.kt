@@ -23,7 +23,8 @@ data class AdminUiState(
     val totalTx: Int = 0,
     val isSimplifiedKds: Boolean = false,
     val isUpdateAvailable: Boolean = false,
-    val latestRelease: com.curbos.pos.data.remote.GithubRelease? = null
+    val latestRelease: com.curbos.pos.data.remote.GithubRelease? = null,
+    val webBaseUrl: String = "https://prepflow.org"
 )
 
 @dagger.hilt.android.lifecycle.HiltViewModel
@@ -59,7 +60,17 @@ class AdminViewModel @javax.inject.Inject constructor(
     }
     
     fun loadSettings() {
-        _uiState.update { it.copy(isSimplifiedKds = profileManager.isSimplifiedKitchenFlow()) }
+        _uiState.update { 
+            it.copy(
+                isSimplifiedKds = profileManager.isSimplifiedKitchenFlow(),
+                webBaseUrl = profileManager.getWebBaseUrl()
+            ) 
+        }
+    }
+
+    fun updateWebBaseUrl(url: String) {
+        profileManager.saveWebBaseUrl(url)
+        _uiState.update { it.copy(webBaseUrl = profileManager.getWebBaseUrl()) }
     }
     
     fun toggleSimplifiedKds(enabled: Boolean) {

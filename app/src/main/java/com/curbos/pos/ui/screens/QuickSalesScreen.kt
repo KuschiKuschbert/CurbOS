@@ -489,7 +489,7 @@ fun TransactionSuccessDialog(
                 
                 // QR Code Generation
                 val qrBitmap = remember(transactionId) {
-                    generateQrCode("https://prepflow.org/curbos/order/$transactionId")
+                    generateQrCode("${uiState.webBaseUrl}/curbos/order/$transactionId")
                 }
                 
                 if (qrBitmap != null) {

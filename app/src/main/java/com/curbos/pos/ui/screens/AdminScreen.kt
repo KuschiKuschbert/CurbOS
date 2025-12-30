@@ -181,6 +181,23 @@ fun AdminScreen(
             
             Spacer(modifier = Modifier.height(32.dp))
 
+            // --- SYSTEM CONFIGURATION ---
+            Text("System Configuration", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = uiState.webBaseUrl,
+                onValueChange = { viewModel.updateWebBaseUrl(it) },
+                label = { Text("Web Portal URL (for QR codes)") },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = ElectricLime,
+                    unfocusedBorderColor = Color.DarkGray,
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White
+                )
+            )
+
             Spacer(modifier = Modifier.height(32.dp))
             
             // --- APP UPDATE ---

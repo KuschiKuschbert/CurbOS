@@ -43,6 +43,15 @@ class ProfileManager(context: Context) {
     fun isSimplifiedKitchenFlow(): Boolean {
         return prefs.getBoolean("simplified_kds", false)
     }
+
+    fun saveWebBaseUrl(url: String) {
+        val sanitized = url.trim().lowercase().removeSuffix("/")
+        prefs.edit().putString("web_base_url", sanitized).apply()
+    }
+
+    fun getWebBaseUrl(): String {
+        return prefs.getString("web_base_url", "https://prepflow.org") ?: "https://prepflow.org"
+    }
     
     suspend fun syncCloudSettings() {
         val result = com.curbos.pos.data.remote.SupabaseManager.fetchSettings()

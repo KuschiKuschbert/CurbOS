@@ -27,14 +27,16 @@ data class SalesUiState(
     val isPaymentDialogVisible: Boolean = false,
     val customerName: String = "",
     val lastTransactionId: String? = null,
-    val unsyncedCount: Int = 0
+    val unsyncedCount: Int = 0,
+    val webBaseUrl: String = "https://prepflow.org"
 )
 
 @dagger.hilt.android.lifecycle.HiltViewModel
 class SalesViewModel @javax.inject.Inject constructor(
     private val posDao: PosDao,
     private val transactionRepository: com.curbos.pos.data.repository.TransactionRepository,
-    private val p2pConnectivityManager: com.curbos.pos.data.p2p.P2PConnectivityManager
+    private val p2pConnectivityManager: com.curbos.pos.data.p2p.P2PConnectivityManager,
+    private val profileManager: com.curbos.pos.data.prefs.ProfileManager
 ) : com.curbos.pos.common.BaseViewModel() {
 
     private val _uiState = MutableStateFlow(SalesUiState())
@@ -47,6 +49,9 @@ class SalesViewModel @javax.inject.Inject constructor(
                 _uiState.update { it.copy(unsyncedCount = count) }
             }
         }
+        
+        // Initial load of Web URL
+        _uiState.update { it.copy(webBaseUrl = profileManager.getWebBaseUrl()) }
     }
 
     // Helper to broadcast cart
