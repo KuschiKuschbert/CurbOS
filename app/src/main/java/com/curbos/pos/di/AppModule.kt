@@ -55,4 +55,14 @@ object AppModule {
     fun provideSyncManager(posDao: PosDao): com.curbos.pos.data.SyncManager {
         return com.curbos.pos.data.SyncManager(posDao)
     }
+
+    @Provides
+    @Singleton
+    fun provideGithubApiService(): com.curbos.pos.data.remote.GithubApiService {
+        return retrofit2.Retrofit.Builder()
+            .baseUrl("https://api.github.com/")
+            .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
+            .build()
+            .create(com.curbos.pos.data.remote.GithubApiService::class.java)
+    }
 }

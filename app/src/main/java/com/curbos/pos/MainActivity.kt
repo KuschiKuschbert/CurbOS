@@ -64,6 +64,7 @@ class MainActivity : AppCompatActivity() {
     @javax.inject.Inject lateinit var profileManager: com.curbos.pos.data.prefs.ProfileManager
     @javax.inject.Inject lateinit var transactionRepository: com.curbos.pos.data.repository.TransactionRepository
     @javax.inject.Inject lateinit var menuRepository: com.curbos.pos.data.repository.MenuRepository
+    @javax.inject.Inject lateinit var updateManager: com.curbos.pos.data.UpdateManager
 
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -211,6 +212,40 @@ class MainActivity : AppCompatActivity() {
                         },
                         dismissButton = {
                             TextButton(onClick = { showSquareInstallDialog = false }) {
+                                Text("Later")
+                            }
+                        }
+                    )
+                }
+
+                // Check for Updates
+                var updateRelease by remember { mutableStateOf<com.curbos.pos.data.remote.GithubRelease?>(null) }
+                LaunchedEffect(Unit) {
+                    updateRelease = updateManager.checkForUpdate()
+                }
+
+                if (updateRelease != null) {
+                    AlertDialog(
+                        onDismissRequest = { updateRelease = null },
+                        title = { Text("Update Available") },
+                        text = { 
+                            Text("New version ${updateRelease?.tagName} is available.\n\n${updateRelease?.body}") 
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    val asset = updateRelease?.assets?.firstOrNull { it.name.endsWith(".apk") }
+                                    if (asset != null) {
+                                        updateManager.downloadAndInstall(asset.downloadUrl)
+                                    }
+                                    updateRelease = null
+                                }
+                            ) {
+                                Text("Update Now")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { updateRelease = null }) {
                                 Text("Later")
                             }
                         }
