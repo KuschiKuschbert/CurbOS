@@ -48,8 +48,8 @@ android {
         manifestPlaceholders["auth0Domain"] = "dev-7myakdl4itf644km.us.auth0.com"
         manifestPlaceholders["auth0Scheme"] = "demo"
         // Enterprise Security: Read secrets from environment (CI) or local.properties (dev)
-        val supabaseUrl = System.getenv("SUPABASE_URL") ?: properties.getProperty("SUPABASE_URL") ?: ""
-        val supabaseKey = System.getenv("SUPABASE_KEY") ?: properties.getProperty("SUPABASE_KEY") ?: ""
+        val supabaseUrl = System.getenv("SUPABASE_URL") ?: properties["SUPABASE_URL"]?.toString() ?: ""
+        val supabaseKey = System.getenv("SUPABASE_KEY") ?: properties["SUPABASE_KEY"]?.toString() ?: ""
 
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_KEY", "\"$supabaseKey\"")
@@ -71,9 +71,9 @@ android {
             
             if (keystoreFile.exists()) {
                 storeFile = keystoreFile
-                storePassword = System.getenv("SIGNING_STORE_PASSWORD") ?: properties.getProperty("storePassword")
-                keyAlias = System.getenv("SIGNING_KEY_ALIAS") ?: properties.getProperty("keyAlias")
-                keyPassword = System.getenv("SIGNING_KEY_PASSWORD") ?: properties.getProperty("keyPassword")
+                storePassword = System.getenv("SIGNING_STORE_PASSWORD") ?: properties["storePassword"]?.toString()
+                keyAlias = System.getenv("SIGNING_KEY_ALIAS") ?: properties["keyAlias"]?.toString()
+                keyPassword = System.getenv("SIGNING_KEY_PASSWORD") ?: properties["keyPassword"]?.toString()
             } else {
                  println("Release keystore not found at ${keystoreFile.absolutePath}, skipping signing config.")
             }
