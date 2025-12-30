@@ -1,45 +1,11 @@
 import java.util.Date
 import java.text.SimpleDateFormat
-import java.io.ByteArrayOutputStream
-import java.util.Properties
-import java.io.FileInputStream
-
-plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("com.google.devtools.ksp")
-    id("kotlin-parcelize")
-    id("org.jetbrains.kotlin.plugin.serialization")
-    id("com.google.dagger.hilt.android")
-}
-
-// Imports consolidated at the top
-// import java.util.Date // Already at top
-// import java.text.SimpleDateFormat // Already at top
-// import java.util.Properties // Already at top
-// import java.io.FileInputStream // Already at top
-
-val properties = Properties()
-val localPropertiesFile = project.rootProject.file("local.properties")
-if (localPropertiesFile.exists()) {
-    properties.load(FileInputStream(localPropertiesFile))
-}
-
-dependencies {
-    // ... (existing dependencies)
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
-
-    
-    // Core
-    implementation("androidx.core:core-ktx:1.12.0")
-    // ...
-}
+// import java.io.ByteArrayOutputStream // Removed
 
 // Helper to get git commit count
 fun getGitCommitCount(): Int {
     return try {
-        val stdout = java.io.ByteArrayOutputStream()
+        // val stdout = java.io.ByteArrayOutputStream() // Removed unused
         // Use Runtime.getRuntime().exec for simpler non-project context if needed, 
         // but 'exec' works at top level in build.gradle.kts as it delegates to project.
         // using ProcessBuilder for pure Kotlin/Java safety if 'exec' is ambiguous
