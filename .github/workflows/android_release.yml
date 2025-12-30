@@ -40,11 +40,17 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
 
+      # Rename APK with version
+      - name: Rename APK
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/curbos-${VERSION}.apk
+
       # Create Release on GitHub
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          files: app/build/outputs/apk/release/app-release.apk
+          files: app/build/outputs/apk/release/curbos-*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -37,8 +37,8 @@ android {
         applicationId = "com.curbos.pos"
         minSdk = 26
         targetSdk = 34
-        versionCode = 8
-        versionName = "0.1.8-experimental-dev"
+        versionCode = 9
+        versionName = "0.1.9-experimental-dev"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
