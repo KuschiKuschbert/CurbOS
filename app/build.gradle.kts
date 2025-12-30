@@ -37,8 +37,8 @@ android {
         applicationId = "com.curbos.pos"
         minSdk = 26
         targetSdk = 34
-        versionCode = 7
-        versionName = "0.1.7-experimental-dev"
+        versionCode = 8
+        versionName = "0.1.8-experimental-dev"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -46,10 +46,9 @@ android {
         }
         manifestPlaceholders["auth0Domain"] = "dev-7myakdl4itf644km.us.auth0.com"
         manifestPlaceholders["auth0Scheme"] = "demo"
-        // Enterprise Security: Read secrets from local.properties (loaded at top level)
-
-        val supabaseUrl = properties.getProperty("SUPABASE_URL") ?: ""
-        val supabaseKey = properties.getProperty("SUPABASE_KEY") ?: ""
+        // Enterprise Security: Read secrets from environment (CI) or local.properties (dev)
+        val supabaseUrl = System.getenv("SUPABASE_URL") ?: properties.getProperty("SUPABASE_URL") ?: ""
+        val supabaseKey = System.getenv("SUPABASE_KEY") ?: properties.getProperty("SUPABASE_KEY") ?: ""
 
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_KEY", "\"$supabaseKey\"")
