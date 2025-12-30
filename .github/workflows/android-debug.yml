@@ -52,10 +52,17 @@ jobs:
         VERSION_NAME=$(grep 'versionName =' app/build.gradle.kts | sed 's/.*= "\(.*\)".*/\1/')
         echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
 
+    - name: Decode Keystore
+      run: |
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/keystore.jks
+
     - name: Build Debug APK
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        SIGNING_STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+        SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
       run: ./gradlew assembleDebug
 
     - name: Upload Debug APK
