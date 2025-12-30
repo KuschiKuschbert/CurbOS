@@ -12,6 +12,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -235,7 +238,9 @@ class MainActivity : AppCompatActivity() {
                         onDismissRequest = { updateRelease = null },
                         title = { Text("Update Available") },
                         text = { 
-                            Text("New version ${updateRelease?.tagName} is available.\n\n${updateRelease?.body}") 
+                            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                                Text("New version ${updateRelease?.tagName} is available.\n\n${updateRelease?.body}") 
+                            }
                         },
                         confirmButton = {
                             Button(
