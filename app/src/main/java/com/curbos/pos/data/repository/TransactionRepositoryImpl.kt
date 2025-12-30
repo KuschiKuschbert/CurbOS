@@ -61,6 +61,18 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override suspend fun updateTransactionStatus(id: String, status: String): Result<Unit> {
+        // FAST PATH: Try direct PATCH first (optimistic)
+        try {
+            val result = SupabaseManager.updateTransactionStatus(id, status)
+            if (result is Result.Success) {
+                 return Result.Success(Unit)
+            }
+        } catch (e: Exception) {
+            // Ignore network errors here and fall back to queue
+            com.curbos.pos.common.Logger.w("TransactionRepository", "Fast path failed, falling back to offline queue: ${e.message}")
+        }
+
+        // FALLBACK: Fetch > Update > Stage > Sync (Offline Capable)
          val fetchResult = SupabaseManager.fetchTransaction(id)
          if (fetchResult is Result.Success<*>) {
              val updated = (fetchResult.data as Transaction).copy(fulfillmentStatus = status) 
@@ -73,7 +85,10 @@ class TransactionRepositoryImpl @Inject constructor(
                 Result.Error(e, "Failed to stage update: ${e.message}")
              }
          } else {
-             return Result.Error(Exception("Transaction not found locally or remotely"), "Refactor pending: Use updateTransaction(Transaction) overload instead.") 
+             // If we can't even fetch it (e.g. offline and not in cache?), we can try to "guess" it if we passed the object,
+             // but strictly speaking we shouldn't bump what we don't have.
+             // Ideally we should check local DB (PosDao) if SupabaseManager fails (which defaults to remote).
+             return Result.Error(Exception("Transaction not found for fallback update"), "Failed to update status") 
          }
     }
 

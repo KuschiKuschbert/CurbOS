@@ -162,13 +162,14 @@ class KitchenViewModel @javax.inject.Inject constructor(
 
             // Online / Host Mode
             // Robust Sync: Always stage locally first, broadast, and try to sync.
-            val updatedTx = transaction.copy(fulfillmentStatus = nextStatus)
+            // REFACTOR: Use updateTransactionStatus for lighter network request (PATCH)
             
             launch {
-                // Repository handles staging + triggering SyncWorker details
-                transactionRepository.updateTransaction(updatedTx)
+                // Repository handles Fast Path (PATCH) + Fallback (Stage/Sync)
+                transactionRepository.updateTransactionStatus(transaction.id, nextStatus)
                 
                 // Optimistically update UI
+                 val updatedTx = transaction.copy(fulfillmentStatus = nextStatus)
                  _uiState.update { state ->
                      val current = state.activeOrders.toMutableList()
                      if (updatedTx.fulfillmentStatus == "COMPLETED") {
