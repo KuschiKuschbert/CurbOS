@@ -83,7 +83,7 @@ fun SplashScreen(onTimeout: () -> Unit) {
             )
             Text(
                 text = "v${com.curbos.pos.BuildConfig.VERSION_NAME}",
-                color = Color.White.copy(alpha = 0.4f),
+                color = Color.White.copy(alpha = 0.6f),
                 fontSize = 12.sp,
                 modifier = Modifier.padding(top = 32.dp)
             )

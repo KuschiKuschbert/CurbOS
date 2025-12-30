@@ -421,7 +421,7 @@ class MainActivity : AppCompatActivity() {
                     ) { innerPadding ->
                     NavHost(
                         navController = navController,
-                        startDestination = startDest,
+                        startDestination = "splash",
                         modifier = Modifier.padding(innerPadding),
                         enterTransition = { fadeIn(animationSpec = tween(300)) + slideInHorizontally { it } },
                         exitTransition = { fadeOut(animationSpec = tween(300)) + slideOutHorizontally { -it } },

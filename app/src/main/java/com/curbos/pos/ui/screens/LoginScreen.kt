@@ -166,6 +166,12 @@ fun LoginScreen(
                         contentScale = androidx.compose.ui.layout.ContentScale.Fit
                     )
                 }
+                Text(
+                    text = "v${com.curbos.pos.BuildConfig.VERSION_NAME}",
+                    color = Color.White.copy(alpha = 0.6f),
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
             }
         }
     }

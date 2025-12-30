@@ -68,7 +68,7 @@ fun WelcomeScreen(
             Spacer(modifier = Modifier.height(32.dp))
             Text(
                 text = "v${com.curbos.pos.BuildConfig.VERSION_NAME}",
-                color = Color.White.copy(alpha = 0.3f),
+                color = Color.White.copy(alpha = 0.6f),
                 fontSize = 12.sp,
                 modifier = Modifier.alpha(alpha)
             )
