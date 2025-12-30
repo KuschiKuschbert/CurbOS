@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.window.Dialog
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.material.ripple.rememberRipple
