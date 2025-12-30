@@ -226,7 +226,8 @@ class MainActivity : AppCompatActivity() {
                 // Check for Updates
                 var updateRelease by remember { mutableStateOf<com.curbos.pos.data.remote.GithubRelease?>(null) }
                 LaunchedEffect(Unit) {
-                    updateRelease = updateManager.checkForUpdate()
+                    val isDev = profileManager.isDeveloperMode()
+                    updateRelease = updateManager.checkForUpdate(isDevMode = isDev)
                 }
 
                 if (updateRelease != null) {

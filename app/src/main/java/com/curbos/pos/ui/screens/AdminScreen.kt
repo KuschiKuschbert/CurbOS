@@ -245,6 +245,29 @@ fun AdminScreen(
                             fontWeight = FontWeight.Bold
                         )
                     }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(color = Color.DarkGray)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                         Column(modifier = Modifier.weight(1f)) {
+                            Text("Developer Mode", color = Color.White, fontWeight = FontWeight.Bold)
+                            Text("Receive nightly debug builds (Unstable)", color = Color.Gray, fontSize = 12.sp)
+                        }
+                        Switch(
+                            checked = uiState.isDeveloperMode,
+                            onCheckedChange = { viewModel.toggleDeveloperMode(it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.Black,
+                                checkedTrackColor = SafetyOrange
+                            )
+                        )
+                    }
                 }
             }
 

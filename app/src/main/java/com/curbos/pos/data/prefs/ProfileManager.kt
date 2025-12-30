@@ -69,4 +69,11 @@ class ProfileManager(context: Context) {
             }
         }
     }
+    fun saveDeveloperMode(enabled: Boolean) {
+        prefs.edit().putBoolean("developer_mode", enabled).apply()
+    }
+
+    fun isDeveloperMode(): Boolean {
+        return prefs.getBoolean("developer_mode", false)
+    }
 }

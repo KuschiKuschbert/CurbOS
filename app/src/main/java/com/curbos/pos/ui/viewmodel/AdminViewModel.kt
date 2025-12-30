@@ -24,7 +24,8 @@ data class AdminUiState(
     val isSimplifiedKds: Boolean = false,
     val isUpdateAvailable: Boolean = false,
     val latestRelease: com.curbos.pos.data.remote.GithubRelease? = null,
-    val webBaseUrl: String = "https://prepflow.org"
+    val webBaseUrl: String = "https://prepflow.org",
+    val isDeveloperMode: Boolean = false
 )
 
 @dagger.hilt.android.lifecycle.HiltViewModel
@@ -63,7 +64,8 @@ class AdminViewModel @javax.inject.Inject constructor(
         _uiState.update { 
             it.copy(
                 isSimplifiedKds = profileManager.isSimplifiedKitchenFlow(),
-                webBaseUrl = profileManager.getWebBaseUrl()
+                webBaseUrl = profileManager.getWebBaseUrl(),
+                isDeveloperMode = profileManager.isDeveloperMode()
             ) 
         }
     }
@@ -188,10 +190,20 @@ class AdminViewModel @javax.inject.Inject constructor(
         }
     }
 
+    fun toggleDeveloperMode(enabled: Boolean) {
+        profileManager.saveDeveloperMode(enabled)
+        _uiState.update { it.copy(isDeveloperMode = enabled) }
+        launchCatching {
+             val mode = if (enabled) "Developer Mode (Nightly Builds)" else "Standard Mode (Stable Releases)"
+             SnackbarManager.showMessage("Switched to $mode")
+        }
+    }
+
     fun checkForUpdates() {
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
-            val release = updateManager.checkForUpdate()
+            val isDev = profileManager.isDeveloperMode()
+            val release = updateManager.checkForUpdate(isDevMode = isDev)
             _uiState.update { 
                 it.copy(
                     isLoading = false,

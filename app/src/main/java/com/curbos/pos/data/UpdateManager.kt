@@ -25,14 +25,24 @@ class UpdateManager @Inject constructor(
     private val githubService: GithubApiService
 ) {
 
-    suspend fun checkForUpdate(): GithubRelease? = withContext(Dispatchers.IO) {
+    suspend fun checkForUpdate(isDevMode: Boolean): GithubRelease? = withContext(Dispatchers.IO) {
         try {
-            // Replace with your actual user/repo
-            val release = githubService.getLatestRelease("KuschiKuschbert", "CurbOS")
+            val release = if (isDevMode) {
+                 githubService.getReleaseByTag("KuschiKuschbert", "CurbOS", "nightly")
+            } else {
+                 githubService.getLatestRelease("KuschiKuschbert", "CurbOS")
+            }
             
             // remove 'v' prefix if present for comparison
             val remoteVersion = release.tagName.removePrefix("v")
             val currentVersion = BuildConfig.VERSION_NAME.removePrefix("v")
+
+            if (isDevMode) {
+                // In Dev Mode, always offer update if it's the 'nightly' tag, 
+                // assuming the user wants to reinstall the latest nightly.
+                // Or compare published_at timestamps if available. For now, simple return.
+                return@withContext release
+            }
 
             if (remoteVersion != currentVersion) {
                 // Ideally use a semver comparison library, but simple string inequality 
@@ -48,6 +58,10 @@ class UpdateManager @Inject constructor(
 
     fun downloadAndInstall(downloadUrl: String) {
         val fileName = "curbos_update.apk"
+        
+        // Visual Feedback
+        com.curbos.pos.common.SnackbarManager.showMessage("Downloading update... Check notification bar ⬇️")
+
         val request = DownloadManager.Request(Uri.parse(downloadUrl))
             .setTitle("Downloading CurbOS Update")
             .setDescription("Please wait...")
