@@ -1,0 +1,316 @@
+package com.curbos.pos.ui.screens
+
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.curbos.pos.data.model.Transaction
+import com.curbos.pos.ui.viewmodel.KitchenViewModel
+import com.curbos.pos.ui.theme.ElectricLime
+import com.curbos.pos.ui.theme.SafetyOrange
+import java.util.concurrent.TimeUnit
+
+
+@Composable
+fun KitchenScreen(
+    viewModel: KitchenViewModel,
+    onExitKitchenMode: () -> Unit
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    // Keep Screen On
+    val context = androidx.compose.ui.platform.LocalContext.current
+    DisposableEffect(Unit) {
+        val window = (context as? android.app.Activity)?.window
+        window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        onDispose {
+            window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        onDispose {
+            window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+
+    // Refresh data and settings when entering the screen
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
+
+    com.curbos.pos.ui.components.PulsatingBackground(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            // --- HEADER ---
+            if (uiState.isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = ElectricLime)
+                }
+            } else if (uiState.error != null) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Error Loading Orders \uD83D\uDE25", color = Color.Red, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(uiState.error ?: "Unknown error", color = Color.White)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { viewModel.refresh() }, colors = ButtonDefaults.buttonColors(containerColor = ElectricLime)) {
+                            Text("RETRY", color = Color.Black)
+                        }
+                    }
+                }
+            } else {
+                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                    val screenWidth = maxWidth
+                    // Responsive Logic:
+                    // < 600.dp -> Phone (1 Column)
+                    // >= 600.dp -> Tablet (Adaptive)
+                    val minCardWidth = if (screenWidth < 600.dp) screenWidth else 300.dp
+
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = minCardWidth),
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Header as the first item spanning full width
+                        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                           Row(
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "KITCHEN DISPLAY", // Shortened from "KITCHEN DISPLAY SYSTEM"
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 20.sp // Reduced from 24
+                                )
+                                
+                                Button(
+                                    onClick = onExitKitchenMode,
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                    modifier = Modifier.height(36.dp)
+                                ) {
+                                    Text("EXIT", color = Color.White, fontSize = 12.sp)
+                                }
+                            }
+                        } 
+        
+                        if (uiState.activeOrders.isEmpty()) {
+                           item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                                    Text("All quiet in the kitchen... 👨‍🍳", color = Color.Gray, fontSize = 20.sp)
+                                }
+                           }
+                        } else {
+                            items(uiState.activeOrders) { transaction ->
+                                OrderCard(
+                                    transaction = transaction, 
+                                    isSimplifiedFlow = uiState.isSimplifiedFlow,
+                                    onBump = { viewModel.bumpOrder(transaction) },
+                                    onComplete = { viewModel.completeOrder(transaction) }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun OrderCard(transaction: Transaction, isSimplifiedFlow: Boolean, onBump: () -> Unit, onComplete: () -> Unit) {
+    val elapsedTime = System.currentTimeMillis() - transaction.timestamp
+    val elapsedMinutes = TimeUnit.MILLISECONDS.toMinutes(elapsedTime)
+    
+    val accentColor = when {
+        elapsedMinutes < 5 -> ElectricLime
+        elapsedMinutes < 10 -> SafetyOrange
+        else -> Color.Red
+    }
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF111111)),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(2.dp, accentColor.copy(alpha = 0.5f)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(4.dp)
+            .shadow(
+                elevation = if (transaction.fulfillmentStatus == "READY") 20.dp else 4.dp, 
+                shape = RoundedCornerShape(12.dp),
+                spotColor = accentColor.copy(alpha = 0.2f)
+            )
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            // Header: Huge Order Number and Timer
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "#${transaction.orderNumber ?: "???"}",
+                        color = accentColor,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 32.sp,
+                        lineHeight = 32.sp
+                    )
+                    if (!transaction.customerName.isNullOrBlank()) {
+                        Text(
+                            text = transaction.customerName.uppercase(),
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                }
+                
+                Surface(
+                    color = accentColor.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, accentColor.copy(alpha = 0.3f))
+                ) {
+                    Text(
+                        text = "${elapsedMinutes} MIN",
+                        color = accentColor,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Items List: High Contrast and Large
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+                transaction.items.forEach { itemRow ->
+                    Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                        Row(verticalAlignment = Alignment.Top) {
+                            // Quantity Badge
+                            Surface(
+                                color = Color.White,
+                                shape = RoundedCornerShape(4.dp),
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = itemRow.quantity.toString(),
+                                        color = Color.Black,
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 18.sp
+                                    )
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.width(12.dp))
+                            
+                            Text(
+                                text = itemRow.name.uppercase(),
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                lineHeight = 22.sp
+                            )
+                        }
+                        
+                        // Modifiers
+                        if (itemRow.modifiers.isNotEmpty()) {
+                            Text(
+                                text = itemRow.modifiers.joinToString(", ") { it.uppercase() },
+                                color = ElectricLime.copy(alpha = 0.8f),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(start = 44.dp, top = 4.dp)
+                            )
+                        }
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Progress Button (The "Bump")
+            Button(
+                onClick = onBump,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .testTag("bump_button_${transaction.orderNumber}"), 
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = when(transaction.fulfillmentStatus) {
+                        "PENDING" -> accentColor
+                        "IN_PROGRESS" -> SafetyOrange
+                        "READY" -> Color.Red
+                        else -> accentColor
+                    },
+                    contentColor = Color.Black
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+            ) {
+                Text(
+                    text = when(transaction.fulfillmentStatus) {
+                        "PENDING" -> if (isSimplifiedFlow) "READY 🔔" else "COOK 🍳"
+                        "IN_PROGRESS" -> "READY 🔔"
+                        "READY" -> "DELIVER ✅"
+                        else -> "COMPLETE"
+                    },
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
+
+            // Optional direct completion button if not already in the last stage
+            if (transaction.fulfillmentStatus != "READY") {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = onComplete,
+                    border = BorderStroke(1.dp, Color.Gray),
+                    modifier = Modifier.fillMaxWidth().height(48.dp)
+                ) {
+                    Text("FAST READY 🔔", color = Color.Gray)
+                }
+            }
+            
+            // Small Info Tag
+            Text(
+                text = "STATUS: ${transaction.fulfillmentStatus}",
+                color = Color.Gray,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 8.dp).align(Alignment.CenterHorizontally)
+            )
+        }
+    }
+}

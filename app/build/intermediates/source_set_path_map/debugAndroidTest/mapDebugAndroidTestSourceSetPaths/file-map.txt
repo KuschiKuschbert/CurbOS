@@ -1,0 +1,36 @@
+com.curbos.pos.test.app-uiautomator-2.3.0-0 /Users/danielkuschmierz/.gradle/caches/transforms-4/0fea84f9a1fe01c7847b34f3584f72c3/transformed/uiautomator-2.3.0/res
+com.curbos.pos.test.app-jetified-emoji2-1.3.0-1 /Users/danielkuschmierz/.gradle/caches/transforms-4/11c3ee7dd8498baa9a14143089589e4a/transformed/jetified-emoji2-1.3.0/res
+com.curbos.pos.test.app-jetified-activity-ktx-1.8.2-2 /Users/danielkuschmierz/.gradle/caches/transforms-4/1eded0de965e2c3b60b9ff6f16611260/transformed/jetified-activity-ktx-1.8.2/res
+com.curbos.pos.test.app-jetified-ui-test-junit4-release-3 /Users/danielkuschmierz/.gradle/caches/transforms-4/2965471ed84312fe7142e377168e06d0/transformed/jetified-ui-test-junit4-release/res
+com.curbos.pos.test.app-jetified-ui-unit-release-4 /Users/danielkuschmierz/.gradle/caches/transforms-4/2996b435419736c8f17ae34ebfff6548/transformed/jetified-ui-unit-release/res
+com.curbos.pos.test.app-jetified-ui-graphics-release-5 /Users/danielkuschmierz/.gradle/caches/transforms-4/3285de45781dfe1ea26af2ae6ec504ce/transformed/jetified-ui-graphics-release/res
+com.curbos.pos.test.app-jetified-lifecycle-process-2.6.2-6 /Users/danielkuschmierz/.gradle/caches/transforms-4/35ecc27f10cb5fbfcf4e4f4a6ea06389/transformed/jetified-lifecycle-process-2.6.2/res
+com.curbos.pos.test.app-jetified-core-1.6.1-7 /Users/danielkuschmierz/.gradle/caches/transforms-4/37727c00624a77c940bcf63e4dee2740/transformed/jetified-core-1.6.1/res
+com.curbos.pos.test.app-jetified-core-ktx-1.12.0-8 /Users/danielkuschmierz/.gradle/caches/transforms-4/3ca2ddfafb56a41eebe50a4758d0fbf2/transformed/jetified-core-ktx-1.12.0/res
+com.curbos.pos.test.app-jetified-ui-util-release-9 /Users/danielkuschmierz/.gradle/caches/transforms-4/3fb7e3a08edf44ea5d53b63ff1b298e8/transformed/jetified-ui-util-release/res
+com.curbos.pos.test.app-lifecycle-runtime-2.6.2-10 /Users/danielkuschmierz/.gradle/caches/transforms-4/4ec4d9fb359d4cff5f725cdc5b0d0b1e/transformed/lifecycle-runtime-2.6.2/res
+com.curbos.pos.test.app-jetified-activity-1.8.2-11 /Users/danielkuschmierz/.gradle/caches/transforms-4/53473d81bf3d57320e2071c2c506090b/transformed/jetified-activity-1.8.2/res
+com.curbos.pos.test.app-jetified-ui-release-12 /Users/danielkuschmierz/.gradle/caches/transforms-4/58aea0bed58b1df1f37708f02687fb26/transformed/jetified-ui-release/res
+com.curbos.pos.test.app-lifecycle-viewmodel-2.6.2-13 /Users/danielkuschmierz/.gradle/caches/transforms-4/65a92ea8077e33f108d18c776a5c4385/transformed/lifecycle-viewmodel-2.6.2/res
+com.curbos.pos.test.app-jetified-ui-text-release-14 /Users/danielkuschmierz/.gradle/caches/transforms-4/6d3fec259c412e49d8b4ce2ad7c27a82/transformed/jetified-ui-text-release/res
+com.curbos.pos.test.app-jetified-activity-compose-1.8.2-15 /Users/danielkuschmierz/.gradle/caches/transforms-4/6df95de00c9b81f70a85b357d30f0fba/transformed/jetified-activity-compose-1.8.2/res
+com.curbos.pos.test.app-jetified-savedstate-ktx-1.2.1-16 /Users/danielkuschmierz/.gradle/caches/transforms-4/787ef21fbc0826a83a6650188f2401af/transformed/jetified-savedstate-ktx-1.2.1/res
+com.curbos.pos.test.app-jetified-lifecycle-runtime-ktx-2.6.2-17 /Users/danielkuschmierz/.gradle/caches/transforms-4/789c92af95e23c592d227713f37b84aa/transformed/jetified-lifecycle-runtime-ktx-2.6.2/res
+com.curbos.pos.test.app-jetified-customview-poolingcontainer-1.0.0-18 /Users/danielkuschmierz/.gradle/caches/transforms-4/8a309c39827358ddfa4648d0b9fe22b2/transformed/jetified-customview-poolingcontainer-1.0.0/res
+com.curbos.pos.test.app-jetified-startup-runtime-1.1.1-19 /Users/danielkuschmierz/.gradle/caches/transforms-4/904be9f0d82506a1533162bedd3da79a/transformed/jetified-startup-runtime-1.1.1/res
+com.curbos.pos.test.app-jetified-runtime-release-20 /Users/danielkuschmierz/.gradle/caches/transforms-4/96538310c139b8fd7facee16879eb757/transformed/jetified-runtime-release/res
+com.curbos.pos.test.app-jetified-annotation-experimental-1.4.0-21 /Users/danielkuschmierz/.gradle/caches/transforms-4/9e849680238f0777b36475c442cdc275/transformed/jetified-annotation-experimental-1.4.0/res
+com.curbos.pos.test.app-jetified-runtime-saveable-release-22 /Users/danielkuschmierz/.gradle/caches/transforms-4/a9ad7c82f3b9c188cf9abd508e1edcfa/transformed/jetified-runtime-saveable-release/res
+com.curbos.pos.test.app-jetified-ui-geometry-release-23 /Users/danielkuschmierz/.gradle/caches/transforms-4/aab42b009349cfacd8b9b242b1bed37a/transformed/jetified-ui-geometry-release/res
+com.curbos.pos.test.app-jetified-lifecycle-viewmodel-ktx-2.6.2-24 /Users/danielkuschmierz/.gradle/caches/transforms-4/b124f1b3c22b80d2d8eaf6726bc1be42/transformed/jetified-lifecycle-viewmodel-ktx-2.6.2/res
+com.curbos.pos.test.app-jetified-savedstate-1.2.1-25 /Users/danielkuschmierz/.gradle/caches/transforms-4/be01c2b176f1f7d61c6b87ba1d3856fa/transformed/jetified-savedstate-1.2.1/res
+com.curbos.pos.test.app-jetified-ui-test-release-26 /Users/danielkuschmierz/.gradle/caches/transforms-4/cc2edbce5c372daa6866164745e22577/transformed/jetified-ui-test-release/res
+com.curbos.pos.test.app-jetified-profileinstaller-1.3.1-27 /Users/danielkuschmierz/.gradle/caches/transforms-4/d151e7fcef52182e9d8e5fbdd70a3f6b/transformed/jetified-profileinstaller-1.3.1/res
+com.curbos.pos.test.app-jetified-lifecycle-viewmodel-savedstate-2.6.2-28 /Users/danielkuschmierz/.gradle/caches/transforms-4/d4308551c5c3f4958939e8d3ff937112/transformed/jetified-lifecycle-viewmodel-savedstate-2.6.2/res
+com.curbos.pos.test.app-core-runtime-2.2.0-29 /Users/danielkuschmierz/.gradle/caches/transforms-4/ec1898a4fd40e4622bb4492318626812/transformed/core-runtime-2.2.0/res
+com.curbos.pos.test.app-core-1.12.0-30 /Users/danielkuschmierz/.gradle/caches/transforms-4/ecc89545989360d3f39e604a104dd889/transformed/core-1.12.0/res
+com.curbos.pos.test.app-lifecycle-livedata-core-2.6.2-31 /Users/danielkuschmierz/.gradle/caches/transforms-4/f3078aded07c43bcaeee3c8cde40e263/transformed/lifecycle-livedata-core-2.6.2/res
+com.curbos.pos.test.app-androidTest-32 /Users/danielkuschmierz/play around/CurbOS/app/build/generated/res/resValues/androidTest/debug
+com.curbos.pos.test.app-mergeDebugAndroidTestResources-33 /Users/danielkuschmierz/play around/CurbOS/app/build/intermediates/incremental/debugAndroidTest/mergeDebugAndroidTestResources/merged.dir
+com.curbos.pos.test.app-mergeDebugAndroidTestResources-34 /Users/danielkuschmierz/play around/CurbOS/app/build/intermediates/incremental/debugAndroidTest/mergeDebugAndroidTestResources/stripped.dir
+com.curbos.pos.test.app-debugAndroidTest-35 /Users/danielkuschmierz/play around/CurbOS/app/build/intermediates/merged_res/debugAndroidTest/mergeDebugAndroidTestResources

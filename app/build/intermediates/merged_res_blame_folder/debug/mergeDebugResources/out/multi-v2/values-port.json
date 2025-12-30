@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.curbos.pos.app-mergeDebugResources-75:/values-port/values-port.xml",
+            "map": [
+                {
+                    "source": "/Users/danielkuschmierz/.gradle/caches/transforms-4/69e522bcdcf805879ae309a082edef81/transformed/appcompat-1.6.1/res/values-port/values-port.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "55",
+                        "endOffsets": "106"
+                    }
+                }
+            ]
+        }
+    ]
+}

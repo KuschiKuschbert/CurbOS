@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.curbos.pos.app-mergeDebugResources-75:/values-hdpi-v4/values-hdpi-v4.xml",
+            "map": [
+                {
+                    "source": "/Users/danielkuschmierz/.gradle/caches/transforms-4/69e522bcdcf805879ae309a082edef81/transformed/appcompat-1.6.1/res/values-hdpi-v4/values-hdpi-v4.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "6",
+                        "endColumns": "13",
+                        "endOffsets": "327"
+                    }
+                }
+            ]
+        }
+    ]
+}

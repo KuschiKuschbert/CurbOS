@@ -1,0 +1,14 @@
+R_DEF: Internal format may change without notice
+local
+array com_google_android_gms_fonts_certs
+array com_google_android_gms_fonts_certs_dev
+array com_google_android_gms_fonts_certs_prod
+color ic_launcher_background
+drawable ic_launcher_foreground
+mipmap ic_launcher
+mipmap ic_launcher_round
+string app_name
+string com_auth0_client_id
+string com_auth0_domain
+style Theme.CurbOS
+xml file_paths
