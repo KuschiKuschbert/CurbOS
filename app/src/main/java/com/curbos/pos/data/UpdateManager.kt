@@ -68,7 +68,7 @@ class UpdateManager @Inject constructor(
         val request = DownloadManager.Request(Uri.parse(downloadUrl))
             .setTitle("Downloading CurbOS Update")
             .setDescription("Please wait...")
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
             .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
             .setMimeType("application/vnd.android.package-archive")
 
@@ -76,20 +76,25 @@ class UpdateManager @Inject constructor(
         val downloadId = dm.enqueue(request)
 
         // Register receiver for when download is complete
+        // We use the application context here via the injected 'context' field
         val onComplete = object : BroadcastReceiver() {
             override fun onReceive(ctxt: Context, intent: Intent) {
-                if (intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1) == downloadId) {
-                    installApk(fileName, ctxt)
-                    // Unregister self
+                val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+                if (id == downloadId) {
+                    // Start installation immediately
+                    installApk(fileName, context)
+                    
+                    // Unregister self to avoid leaks
                     try {
-                        ctxt.unregisterReceiver(this)
+                        context.unregisterReceiver(this)
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        // Ignore if already unregistered
                     }
                 }
             }
         }
         
+        // Register receiver with the Application Context
         ContextCompat.registerReceiver(
             context, 
             onComplete, 
