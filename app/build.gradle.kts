@@ -160,9 +160,6 @@ dependencies {
     implementation("io.ktor:ktor-client-android:2.3.6")
     implementation("io.ktor:ktor-client-cio:2.3.6")
 
-    // Square (Refactored to use raw Intents to avoid dependency issues)
-    // implementation("com.squareup.sdk.pos:pos-sdk:3.5.0")
-
     // Retrofit (Xero Integration)
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
@@ -188,12 +185,17 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
+    // WorkManager (Moved and Updated)
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation("androidx.hilt:hilt-work:1.2.0")
+    ksp("androidx.hilt:hilt-compiler:1.2.0")
+
     // Hilt
     implementation("com.google.dagger:hilt-android:2.48")
     ksp("com.google.dagger:hilt-android-compiler:2.48")
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
-    implementation("androidx.hilt:hilt-work:1.1.0")
-    ksp("androidx.hilt:hilt-compiler:1.1.0")
+    // implementation("androidx.hilt:hilt-work:1.1.0") // Replaced above
+    // ksp("androidx.hilt:hilt-compiler:1.1.0") // Replaced above
 
     // P2P / Nearby Connections
     implementation("com.google.android.gms:play-services-nearby:19.0.0")
