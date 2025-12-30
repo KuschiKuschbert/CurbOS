@@ -639,7 +639,6 @@ fun MenuContent(
             }
         }
     }
-    }
 
     
     // Powered by Prepflow Branding (Bottom of Menu Grid)

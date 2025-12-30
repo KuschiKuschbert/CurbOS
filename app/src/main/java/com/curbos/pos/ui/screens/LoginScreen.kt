@@ -139,7 +139,6 @@ fun LoginScreen(
                     }
                 }
             }
-            }
             
             // Powered by Prepflow Branding
             Box(

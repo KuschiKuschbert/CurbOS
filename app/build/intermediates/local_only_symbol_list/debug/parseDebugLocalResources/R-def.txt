@@ -5,6 +5,7 @@ array com_google_android_gms_fonts_certs_dev
 array com_google_android_gms_fonts_certs_prod
 color ic_launcher_background
 drawable ic_launcher_foreground
+drawable prepflow_logo
 mipmap ic_launcher
 mipmap ic_launcher_round
 string app_name

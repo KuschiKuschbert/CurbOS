@@ -737,9 +737,10 @@ int drawable notification_template_icon_bg 0x7f08007f
 int drawable notification_template_icon_low_bg 0x7f080080
 int drawable notification_tile_bg 0x7f080081
 int drawable notify_panel_notification_icon_bg 0x7f080082
-int drawable test_level_drawable 0x7f080083
-int drawable tooltip_frame_dark 0x7f080084
-int drawable tooltip_frame_light 0x7f080085
+int drawable prepflow_logo 0x7f080083
+int drawable test_level_drawable 0x7f080084
+int drawable tooltip_frame_dark 0x7f080085
+int drawable tooltip_frame_light 0x7f080086
 int id ALT 0x7f090000
 int id CTRL 0x7f090001
 int id FUNCTION 0x7f090002
