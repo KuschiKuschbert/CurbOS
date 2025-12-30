@@ -13,10 +13,11 @@ plugins {
     id("com.google.dagger.hilt.android")
 }
 
-import java.util.Properties
-import java.io.FileInputStream
-
-// ... (existing code)
+// Imports consolidated at the top
+// import java.util.Date // Already at top
+// import java.text.SimpleDateFormat // Already at top
+// import java.util.Properties // Already at top
+// import java.io.FileInputStream // Already at top
 
 val properties = Properties()
 val localPropertiesFile = project.rootProject.file("local.properties")
