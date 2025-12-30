@@ -32,6 +32,9 @@ object SupabaseManager {
     // Use a lazy delegate so we can ensure initialization happens on the Main thread 
     // if accessed from there, or we can pre-init it safely.
     val client: SupabaseClient by lazy {
+        if (SUPABASE_URL.isBlank() || SUPABASE_KEY.isBlank()) {
+           throw IllegalStateException("Supabase Configuration Missing! URL or Key is empty. Check BuildConfig and CI Secrets.")
+        }
         createSupabaseClient(
             supabaseUrl = SUPABASE_URL,
             supabaseKey = SUPABASE_KEY

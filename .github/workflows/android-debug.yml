@@ -25,6 +25,12 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
+    - name: Create local.properties
+      run: |
+        echo "sdk.dir=$ANDROID_HOME" > local.properties
+        echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> local.properties
+        echo "SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}" >> local.properties
+
     - name: Extract Version Name
       id: extract_version
       run: |
