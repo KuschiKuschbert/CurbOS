@@ -86,7 +86,8 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
         debug {
-            versionNameSuffix = "-nightly"
+            val date = java.text.SimpleDateFormat("yyyyMMdd-HH").format(java.util.Date())
+            versionNameSuffix = "-nightly-$date"
             applicationIdSuffix = ".debug"
         }
     }
