@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.curbos.pos.R
 import javax.inject.Inject
 
 data class LoginUiState(
@@ -52,7 +53,6 @@ class LoginViewModel @Inject constructor(
             .withScope("openid profile email offline_access")
             .start(context, object : com.auth0.android.callback.Callback<com.auth0.android.result.Credentials, com.auth0.android.authentication.AuthenticationException> {
                 override fun onSuccess(result: com.auth0.android.result.Credentials) {
-                    val idToken = result.idToken // JWT
                     val userProfile = result.user
                     val email = userProfile.email
                     
@@ -62,8 +62,8 @@ class LoginViewModel @Inject constructor(
                     }
 
                     viewModelScope.launch {
-                        // 1. "Sign In" (For now, just acknowledge token)
-                        SupabaseManager.signInWithAuth0(idToken)
+                        // 2. Perform Supabase Login (Gate check)
+                        SupabaseManager.signInWithAuth0()
                         
                         // 2. Check Subscription
                         val subResult = SupabaseManager.checkSubscriptionStatus(email)

@@ -52,13 +52,18 @@ object SupabaseManager {
      * MUST be called from the Main thread because Supabase Auth 
      * registers lifecycle observers.
      */
-    fun init(context: android.content.Context) {
+    /**
+     * Pre-initializes the Supabase client.
+     * MUST be called from the Main thread because Supabase Auth 
+     * registers lifecycle observers.
+     */
+    fun init() {
         // Just accessing the lazy property triggers initialization
-        val dummy = client
+        client
     }
 
     // Auth0 Login (Exchange ID Token)
-    suspend fun signInWithAuth0(idToken: String): com.curbos.pos.common.Result<Boolean> {
+    suspend fun signInWithAuth0(): com.curbos.pos.common.Result<Boolean> {
         return try {
             // Option 1: If Supabase Project has Auth0 Provider enabled
             // client.auth.signInWith(IDToken) {

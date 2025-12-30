@@ -40,6 +40,7 @@ import kotlinx.coroutines.launch
 import com.curbos.pos.data.prefs.ProfileManager
 import com.curbos.pos.util.HapticHelper
 import com.curbos.pos.util.BiometricHelper
+import com.curbos.pos.data.remote.SupabaseManager
 import com.curbos.pos.ui.screens.LoginScreen
 import com.curbos.pos.ui.screens.WelcomeScreen
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
@@ -71,7 +72,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         
         // Ensure Supabase is initialized on the Main thread (required for Auth lifecycle observers)
-        com.curbos.pos.data.remote.SupabaseManager.init(this)
+        // Initialize Supabase
+        SupabaseManager.init()
         
         // Schedule Periodic Sync (Every 15 minutes)
         val periodicSyncRequest = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
@@ -437,7 +439,6 @@ class MainActivity : AppCompatActivity() {
                         }
                         composable("login") {
                             LoginScreen(
-                                biometricHelper = biometricHelper,
                                 onLoginSuccess = {
                                     navController.navigate("welcome") {
                                         popUpTo("login") { inclusive = true }

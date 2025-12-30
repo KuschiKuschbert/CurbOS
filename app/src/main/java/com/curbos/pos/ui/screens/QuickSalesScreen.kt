@@ -415,11 +415,7 @@ fun QuickSalesScreen(
          // Actually, let's implement a basic RecentTransactionListDialog.
          
          RecentTransactionsDialog(
-            onDismiss = { showRecentOrders = false },
-            onSelectTransaction = { txId ->
-                showRecentOrders = false
-                viewModel.reopenTransaction(txId)
-            }
+            onDismiss = { showRecentOrders = false }
          )
     }
 
@@ -521,8 +517,7 @@ fun TransactionSuccessDialog(
 
 @Composable
 fun RecentTransactionsDialog(
-    onDismiss: () -> Unit,
-    onSelectTransaction: (String) -> Unit
+    onDismiss: () -> Unit
 ) {
      Dialog(onDismissRequest = onDismiss) {
         Surface(

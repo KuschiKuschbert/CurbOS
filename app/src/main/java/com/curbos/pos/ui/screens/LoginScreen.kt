@@ -25,7 +25,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun LoginScreen(
     viewModel: com.curbos.pos.ui.viewmodel.LoginViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
-    biometricHelper: com.curbos.pos.util.BiometricHelper? = null,
     onLoginSuccess: () -> Unit
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
