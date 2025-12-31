@@ -41,7 +41,9 @@ fun AdminScreen(
     viewModel: com.curbos.pos.ui.viewmodel.AdminViewModel,
     csvExportManager: CsvExportManager? = null,
     onLaunchCustomerDisplay: () -> Unit = {},
-    onLaunchP2PSetup: () -> Unit = {}
+    onLaunchP2PSetup: () -> Unit = {},
+    onNavigateToMenuCatalog: () -> Unit = {},
+    onNavigateToModifiers: () -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
@@ -142,7 +144,17 @@ fun AdminScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = ElectricLime)
             ) {
-                Text("SYNC MENU FROM CLOUD ☁️", color = Color.Black)
+                Text("REFRESH MENU DATA ☁️", color = Color.Black)
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onNavigateToMenuCatalog,
+                modifier = Modifier.fillMaxWidth().height(60.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = ElectricLime)
+            ) {
+                Text("MENU CATALOG & EDITOR \uD83D\uDCDD", color = Color.Black, fontWeight = FontWeight.Bold)
             }
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -198,6 +210,27 @@ fun AdminScreen(
                 )
             )
 
+            Spacer(modifier = Modifier.height(32.dp))
+            
+            // --- MENU CATALOG ---
+            Button(
+                onClick = onNavigateToMenuCatalog,
+                modifier = Modifier.fillMaxWidth().height(60.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = ElectricLime)
+            ) {
+                 Text("MENU CATALOG & EDITOR \uD83D\uDCDD", color = Color.Black, fontWeight = FontWeight.Bold)
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onNavigateToModifiers,
+                modifier = Modifier.fillMaxWidth().height(60.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+            ) {
+                Text("MANAGE MODIFIERS 🛠️", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+            
             Spacer(modifier = Modifier.height(32.dp))
             
             // --- APP UPDATE ---

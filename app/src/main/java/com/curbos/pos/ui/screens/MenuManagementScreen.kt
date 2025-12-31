@@ -26,9 +26,10 @@ fun MenuManagementScreen(
     // Modifiers Support
     modifiers: List<com.curbos.pos.data.model.ModifierOption> = emptyList(),
     onSaveModifier: (com.curbos.pos.data.model.ModifierOption) -> Unit = {},
-    onDeleteModifier: (com.curbos.pos.data.model.ModifierOption) -> Unit = {}
+    onDeleteModifier: (com.curbos.pos.data.model.ModifierOption) -> Unit = {},
+    initialTabIndex: Int = 0
 ) {
-    var selectedTabIndex by remember { mutableStateOf(0) }
+    var selectedTabIndex by remember { mutableStateOf(initialTabIndex) }
     val tabs = listOf("Menu Items", "Modifiers")
 
     // Item State
@@ -303,12 +304,13 @@ fun MenuRow(
 @Composable
 fun MenuItemDialog(
     item: MenuItem?,
+    initialCategory: String? = null,
     onDismiss: () -> Unit,
     onConfirm: (MenuItem) -> Unit
 ) {
     var name by remember { mutableStateOf(item?.name ?: "") }
     var price by remember { mutableStateOf(item?.price?.toString() ?: "") }
-    var category by remember { mutableStateOf(item?.category ?: "Tacos") }
+    var category by remember { mutableStateOf(item?.category ?: initialCategory ?: "Tacos") }
 
     AlertDialog(
         onDismissRequest = onDismiss,

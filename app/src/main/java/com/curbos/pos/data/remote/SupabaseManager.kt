@@ -200,6 +200,36 @@ object SupabaseManager {
         }
     }
 
+    suspend fun deleteItemsByCategory(category: String): com.curbos.pos.common.Result<Unit> {
+        return try {
+            client.postgrest["menu_items"].delete {
+                filter {
+                     eq("category", category)
+                }
+            }
+            com.curbos.pos.common.Result.Success(Unit)
+        } catch (e: Exception) {
+            com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to delete category items", e)
+            com.curbos.pos.common.Result.Error(e, "Failed to delete category items: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun updateCategoryName(oldName: String, newName: String): com.curbos.pos.common.Result<Unit> {
+        return try {
+            client.postgrest["menu_items"].update({
+                set("category", newName)
+            }) {
+                filter {
+                    eq("category", oldName)
+                }
+            }
+            com.curbos.pos.common.Result.Success(Unit)
+        } catch (e: Exception) {
+             com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to rename category", e)
+             com.curbos.pos.common.Result.Error(e, "Failed to rename category: ${e.localizedMessage}")
+        }
+    }
+
     suspend fun upsertModifier(modifier: com.curbos.pos.data.model.ModifierOption): com.curbos.pos.common.Result<Unit> {
         return try {
             client.postgrest["modifier_options"].upsert(modifier, onConflict = "id")

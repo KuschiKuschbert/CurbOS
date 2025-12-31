@@ -524,19 +524,163 @@ class MainActivity : AppCompatActivity() {
                             )
                         }
                         composable("admin") {
-                             val adminViewModel: com.curbos.pos.ui.viewmodel.AdminViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+                             // Redirect to dashboard
+                             LaunchedEffect(Unit) {
+                                 navController.navigate("admin_dashboard") {
+                                     popUpTo("admin") { inclusive = true }
+                                 }
+                             }
+                        }
 
-                            // Intercepted by BiometricAuth in bottom bar earlier, but double check not strictly needed here
-                            AdminScreen(
-                                viewModel = adminViewModel,
-                                csvExportManager = csvExportManager,
-                                onLaunchCustomerDisplay = {
-                                    navController.navigate("customer_display") { launchSingleTop = true }
+                        composable("admin_dashboard") {
+                             val adminViewModel: com.curbos.pos.ui.viewmodel.AdminViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+                             com.curbos.pos.ui.screens.AdminScreen(
+                                 viewModel = adminViewModel,
+                                 csvExportManager = csvExportManager,
+                                 onLaunchCustomerDisplay = {
+                                     navController.navigate("customer_display") { launchSingleTop = true }
+                                 },
+                                 onLaunchP2PSetup = {
+                                     navController.navigate("p2p_setup") { launchSingleTop = true }
+                                 },
+                                 onNavigateToMenuCatalog = {
+                                     navController.navigate("admin_menu_catalog") { launchSingleTop = true }
+                                 },
+                                 onNavigateToModifiers = {
+                                     navController.navigate("admin_modifiers") { launchSingleTop = true }
+                                 }
+                             )
+                        }
+
+                        composable("admin_menu_catalog") {
+                            // Fetch data directly or via a shared ViewModel.
+                            val menuItems by posDao.getAllMenuItems().collectAsState(initial = emptyList())
+                            // Calculate Categories and Counts
+                            val categories = menuItems.map { it.category }.distinct().sorted()
+                            val counts = menuItems.groupingBy { it.category }.eachCount()
+                            val coroutineScope = rememberCoroutineScope()
+
+                            com.curbos.pos.ui.screens.MenuCatalogScreen(
+                                categories = categories,
+                                counts = counts,
+                                onCategoryClick = { category ->
+                                    navController.navigate("admin_category_items/$category")
                                 },
-                                onLaunchP2PSetup = {
-                                    navController.navigate("p2p_setup") { launchSingleTop = true }
+                                onAddCategory = { newName ->
+                                    navController.navigate("admin_category_items/$newName?isNew=true")
+                                },
+                                onRenameCategory = { oldName, newName ->
+                                    coroutineScope.launch {
+                                        menuRepository.renameCategory(oldName, newName)
+                                        posDao.updateCategoryName(oldName, newName)
+                                    }
+                                },
+                                onDeleteCategory = { category ->
+                                    coroutineScope.launch {
+                                        menuRepository.deleteCategory(category)
+                                        posDao.deleteItemsByCategory(category)
+                                    }
+                                },
+                                onNavigateBack = { navController.popBackStack() }
+                            )
+                        }
+
+                        composable("admin_modifiers") {
+                            val menuItems by posDao.getAllMenuItems().collectAsState(initial = emptyList())
+                            val modifiers by posDao.getAllModifiers().collectAsState(initial = emptyList())
+                            val coroutineScope = rememberCoroutineScope()
+                            
+                            // Reuse MenuManagementScreen but start at Modifiers tab
+                            com.curbos.pos.ui.screens.MenuManagementScreen(
+                                menuItems = menuItems,
+                                onSave = { item -> 
+                                    // Should not happen in modifiers tab but required by signature
+                                },
+                                onDelete = { item -> },
+                                modifiers = modifiers,
+                                onSaveModifier = { modifier ->
+                                    coroutineScope.launch {
+                                        if (modifiers.any { it.id == modifier.id }) {
+                                            posDao.updateModifier(modifier)
+                                        } else {
+                                            posDao.insertModifier(modifier)
+                                        }
+                                        launch(kotlinx.coroutines.Dispatchers.IO) {
+                                            menuRepository.upsertModifier(modifier)
+                                        }
+                                    }
+                                },
+                                onDeleteModifier = { modifier ->
+                                     coroutineScope.launch {
+                                        posDao.deleteModifier(modifier)
+                                        launch(kotlinx.coroutines.Dispatchers.IO) {
+                                            menuRepository.deleteModifier(modifier.id)
+                                        }
+                                    }
+                                },
+                                initialTabIndex = 1 // Open Modifiers Tab
+                            )
+                        }
+
+                        composable(
+                            route = "admin_category_items/{categoryName}?isNew={isNew}",
+                            arguments = listOf(
+                                androidx.navigation.navArgument("categoryName") { type = androidx.navigation.NavType.StringType },
+                                androidx.navigation.navArgument("isNew") { type = androidx.navigation.NavType.BoolType; defaultValue = false }
+                            )
+                        ) { backStackEntry ->
+                            val categoryName = backStackEntry.arguments?.getString("categoryName") ?: ""
+                            val isNew = backStackEntry.arguments?.getBoolean("isNew") ?: false
+                            
+                            val items by posDao.getMenuItemsByCategory(categoryName).collectAsState(initial = emptyList())
+                            val coroutineScope = rememberCoroutineScope()
+                            
+                            var showItemDialog by remember { mutableStateOf(isNew) }
+                            var editingItem by remember { mutableStateOf<com.curbos.pos.data.model.MenuItem?>(null) } // Null means new
+
+                            com.curbos.pos.ui.screens.CategoryItemsScreen(
+                                categoryName = categoryName,
+                                items = items,
+                                onBack = { navController.popBackStack() },
+                                onAddItem = { 
+                                    editingItem = null
+                                    showItemDialog = true 
+                                },
+                                onEditItem = { 
+                                    editingItem = it
+                                    showItemDialog = true 
+                                },
+                                onDeleteItem = { item ->
+                                    coroutineScope.launch {
+                                        menuRepository.deleteMenuItem(item.id)
+                                        posDao.deleteMenuItem(item)
+                                    }
                                 }
                             )
+
+                            if (showItemDialog) {
+                                com.curbos.pos.ui.screens.MenuItemDialog(
+                                    item = editingItem,
+                                    initialCategory = categoryName,
+                                    onDismiss = { 
+                                        showItemDialog = false
+                                        if (isNew && items.isEmpty()) navController.popBackStack()
+                                    },
+                                    onConfirm = { newItem ->
+                                        coroutineScope.launch {
+                                            if (items.any { it.id == newItem.id }) {
+                                                posDao.updateMenuItem(newItem)
+                                            } else {
+                                                posDao.insertMenuItem(newItem)
+                                            }
+                                            launch(kotlinx.coroutines.Dispatchers.IO) {
+                                                menuRepository.upsertMenuItem(newItem)
+                                            }
+                                        }
+                                        showItemDialog = false
+                                    }
+                                )
+                            }
                         }
                         composable("kitchen") {
                             val kitchenViewModel: com.curbos.pos.ui.viewmodel.KitchenViewModel = androidx.hilt.navigation.compose.hiltViewModel()

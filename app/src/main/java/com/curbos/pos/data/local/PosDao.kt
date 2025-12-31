@@ -24,6 +24,15 @@ interface PosDao {
     @Query("SELECT * FROM modifier_options")
     fun getAllModifiers(): Flow<List<ModifierOption>>
 
+    @Query("SELECT COUNT(*) FROM menu_items WHERE category = :category")
+    suspend fun getMenuItemCountByCategory(category: String): Int
+
+    @Query("UPDATE menu_items SET category = :newName WHERE category = :oldName")
+    suspend fun updateCategoryName(oldName: String, newName: String)
+
+    @Query("DELETE FROM menu_items WHERE category = :category")
+    suspend fun deleteItemsByCategory(category: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertModifier(modifier: ModifierOption)
 

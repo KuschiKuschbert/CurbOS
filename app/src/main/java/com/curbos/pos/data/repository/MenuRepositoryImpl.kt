@@ -19,6 +19,14 @@ class MenuRepositoryImpl @Inject constructor() : MenuRepository {
         return SupabaseManager.deleteMenuItem(id)
     }
 
+    override suspend fun renameCategory(oldName: String, newName: String): Result<Unit> {
+        return SupabaseManager.updateCategoryName(oldName, newName)
+    }
+
+    override suspend fun deleteCategory(categoryName: String): Result<Unit> {
+        return SupabaseManager.deleteItemsByCategory(categoryName)
+    }
+
     override suspend fun fetchModifiers(): Result<List<ModifierOption>> {
         return SupabaseManager.fetchModifiers()
     }
