@@ -4,37 +4,39 @@ import com.curbos.pos.data.remote.SupabaseManager
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.TableChart
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import com.curbos.pos.data.CsvExportManager
-import com.curbos.pos.data.local.PosDao
 import com.curbos.pos.data.model.Transaction
 import com.curbos.pos.ui.theme.ElectricGradient
 import com.curbos.pos.ui.theme.ElectricLime
 import com.curbos.pos.ui.theme.SafetyOrange
-import com.curbos.pos.ui.theme.DarkSurfaceGradient
 import java.time.Instant
 import java.time.ZoneId
-import java.util.Calendar
-import org.json.JSONArray
 
 @Composable
 fun AdminScreen(
@@ -62,342 +64,390 @@ fun AdminScreen(
             .verticalScroll(rememberScrollState())
     ) {
         // --- HEADER ---
-        Text(
-            text = "COMMAND CENTER",
-            style = MaterialTheme.typography.headlineMedium.copy(
-                fontWeight = FontWeight.Bold,
-                brush = ElectricGradient
-            ),
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
+        AdminHeaderSection()
 
         if (uiState.isLoading) {
-            CircularProgressIndicator(color = ElectricLime)
+            Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                 CircularProgressIndicator(color = ElectricLime)
+            }
         } else {
-            // --- KPI CARDS ---
-            Row(modifier = Modifier.fillMaxWidth().height(100.dp)) {
-                KpiCard(
-                    title = "Total Revenue",
-                    value = "$%.2f".format(totalRevenue),
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                KpiCard(
-                    title = "Transactions",
-                    value = totalTx.toString(),
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // --- RUSH HOUR CHART ---
-            Text("Rush Hour (Sales by Hour)", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
-            Spacer(modifier = Modifier.height(16.dp))
-            HourlySalesChart(hourlySales = hourlySales, modifier = Modifier.fillMaxWidth().height(200.dp))
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // --- BEST SELLERS ---
-            Text("Top Movers", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
-            Spacer(modifier = Modifier.height(16.dp))
-            bestSellers.forEachIndexed { index, pair ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("${index + 1}. ${pair.first}", color = Color.White)
-                    Text("${pair.second} sold", color = ElectricLime)
-                }
-                HorizontalDivider(color = Color.DarkGray)
-            }
+            // --- METRICS ---
+            MetricsSection(totalRevenue, totalTx)
             
-            if (bestSellers.isEmpty()) {
-                Text("No sales yet today.", color = Color.Gray)
-            }
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // --- QUICK ACTIONS GRID ---
+            Text("Quick Actions", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            ActionGrid(
+                onMenuCatalog = onNavigateToMenuCatalog,
+                onModifiers = onNavigateToModifiers,
+                onSync = { viewModel.syncMenu() },
+                onPushOrders = { viewModel.forceSyncOrders() },
+                onExportCsv = { scope.launch { csvExportManager?.exportDailySales() } },
+                onP2P = onLaunchP2PSetup
+            )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-            // --- UTILITIES ---
+            // --- INSIGHTS ---
+            Text("Business Insights", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
+            Spacer(modifier = Modifier.height(16.dp))
+            HourlySalesChart(hourlySales = hourlySales, modifier = Modifier.fillMaxWidth().height(180.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+            BestSellersCard(bestSellers)
+            
+            Spacer(modifier = Modifier.height(32.dp))
 
-
-            Button(
-                onClick = {
-                    scope.launch {
-                        csvExportManager?.exportDailySales()
+            // --- SETTINGS LIST ---
+            Text("System & Settings", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(Modifier.fillMaxWidth()) {
+                    // Web URL
+                    SettingItem {
+                         OutlinedTextField(
+                            value = uiState.webBaseUrl,
+                            onValueChange = { viewModel.updateWebBaseUrl(it) },
+                            label = { Text("Web Portal URL") },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color.Transparent,
+                                unfocusedBorderColor = Color.Transparent
+                            ),
+                            singleLine = true
+                        )
                     }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Text("Export Daily CSV Report", color = Color.White)
+                    HorizontalDivider(color = Color.Black.copy(alpha=0.1f))
+                    
+                    // Kitchen Flow
+                    SettingSwitchItem(
+                        title = "Simplified Kitchen Flow",
+                        subtitle = "Skip cooking state, direct to ready",
+                        checked = uiState.isSimplifiedKds,
+                        onCheckedChange = { viewModel.toggleSimplifiedKds(it) }
+                    )
+                    HorizontalDivider(color = Color.Black.copy(alpha=0.1f))
+
+                    // Developer Mode
+                    SettingSwitchItem(
+                        title = "Developer Mode",
+                        subtitle = "Receive nightly debug builds",
+                        checked = uiState.isDeveloperMode,
+                        onCheckedChange = { viewModel.toggleDeveloperMode(it) }
+                    )
+                }
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             
-            Button(
-                onClick = {
-                    viewModel.syncMenu()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = ElectricLime)
-            ) {
-                Text("REFRESH MENU DATA ☁️", color = Color.Black)
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = onNavigateToMenuCatalog,
-                modifier = Modifier.fillMaxWidth().height(60.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = ElectricLime)
-            ) {
-                Text("MENU CATALOG & EDITOR \uD83D\uDCDD", color = Color.Black, fontWeight = FontWeight.Bold)
-            }
-            
-
-
-            Button(
-                onClick = {
-                    viewModel.forceSyncOrders()
-                },
-                modifier = Modifier.fillMaxWidth().height(60.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Text("PUSH PENDING ORDERS 📤", color = Color.Black, fontWeight = FontWeight.Bold)
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = onLaunchP2PSetup,
-                modifier = Modifier.fillMaxWidth().height(60.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-            ) {
-                 Text("OFFLINE P2P SETUP 📶", color = Color.White, fontWeight = FontWeight.Bold)
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = onLaunchCustomerDisplay,
-                modifier = Modifier.fillMaxWidth().height(60.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C2C2C))
-            ) {
-                Text("LAUNCH CUSTOMER DISPLAY \uD83D\uDCFA", color = ElectricLime, fontWeight = FontWeight.Bold)
-            }
-            
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // --- SYSTEM CONFIGURATION ---
-            Text("System Configuration", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = uiState.webBaseUrl,
-                onValueChange = { viewModel.updateWebBaseUrl(it) },
-                label = { Text("Web Portal URL (for QR codes)") },
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = ElectricLime,
-                    unfocusedBorderColor = Color.DarkGray,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
-                )
+            // --- UPDATE CARD ---
+            UpdateCard(
+                currentVersion = com.curbos.pos.BuildConfig.VERSION_NAME,
+                isUpdateAvailable = uiState.isUpdateAvailable,
+                latestVersion = uiState.latestRelease?.tagName,
+                downloadProgress = uiState.downloadProgress,
+                onCheck = { viewModel.checkForUpdates() },
+                onUpdate = { viewModel.installUpdate() }
             )
 
             Spacer(modifier = Modifier.height(32.dp))
             
-            // --- MENU CATALOG ---
-            Button(
-                onClick = onNavigateToMenuCatalog,
-                modifier = Modifier.fillMaxWidth().height(60.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = ElectricLime)
-            ) {
-                 Text("MENU CATALOG & EDITOR \uD83D\uDCDD", color = Color.Black, fontWeight = FontWeight.Bold)
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = onNavigateToModifiers,
-                modifier = Modifier.fillMaxWidth().height(60.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
-            ) {
-                Text("MANAGE MODIFIERS 🛠️", color = Color.White, fontWeight = FontWeight.Bold)
-            }
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            // --- APP UPDATE ---
-            Text("App Updates", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Auto-Update System", color = Color.White, fontWeight = FontWeight.Bold)
-                            val currentVersion = com.curbos.pos.BuildConfig.VERSION_NAME
-                            Text("Current Version: $currentVersion", color = Color.Gray, fontSize = 12.sp)
-                        }
-                        
-                        if (uiState.isUpdateAvailable) {
-                            Button(
-                                onClick = { viewModel.installUpdate() },
-                                colors = ButtonDefaults.buttonColors(containerColor = SafetyOrange)
-                            ) {
-                                Text("UPDATE NOW")
-                            }
-                        } else {
-                            OutlinedButton(
-                                onClick = { viewModel.checkForUpdates() }
-                            ) {
-                                Text("CHECK FOR UPDATE")
-                            }
-                        }
-                    }
-                    
-
-
-                    if (uiState.downloadProgress in 1..99) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        LinearProgressIndicator(
-                            progress = uiState.downloadProgress / 100f,
-                            modifier = Modifier.fillMaxWidth().height(8.dp),
-                            color = SafetyOrange,
-                            trackColor = Color.DarkGray
-                        )
-                        Text(
-                            text = "Downloading... ${uiState.downloadProgress}%",
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            modifier = Modifier.align(Alignment.End).padding(top = 4.dp)
-                        )
-                    }
-                    
-                    if (uiState.isUpdateAvailable && uiState.downloadProgress == 0) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "New version ${uiState.latestRelease?.tagName} available!",
-                            color = SafetyOrange,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider(color = Color.DarkGray)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Developer Mode", color = Color.White, fontWeight = FontWeight.Bold)
-                            Text("Receive nightly debug builds (Unstable)", color = Color.Gray, fontSize = 12.sp)
-                        }
-                        Switch(
-                            checked = uiState.isDeveloperMode,
-                            onCheckedChange = { viewModel.toggleDeveloperMode(it) },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color.Black,
-                                checkedTrackColor = SafetyOrange
-                            )
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            // --- SETTINGS ---
-            Text("Settings", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Simplified Kitchen Flow", color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("Skip 'Start Cooking'. Orders go directly to Ready.", color = Color.Gray, fontSize = 12.sp)
-                }
-                Switch(
-                    checked = uiState.isSimplifiedKds,
-                    onCheckedChange = { viewModel.toggleSimplifiedKds(it) },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.Black,
-                        checkedTrackColor = ElectricLime
-                    )
-                )
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-            
             // --- DANGER ZONE ---
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFAA0000).copy(alpha = 0.2f)),
-                modifier = Modifier.fillMaxWidth()
+            DangerZone(
+                onResetDemo = { viewModel.resetToDemoData() },
+                onClearAll = { viewModel.clearAllData() }
+            )
+            
+            Spacer(modifier = Modifier.height(48.dp))
+        }
+    }
+}
+
+// --- COMPONENTS ---
+
+@Composable
+fun AdminHeaderSection() {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column {
+             Text(
+                text = "Dashboard",
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                color = Color.White
+            )
+            Text(
+                text = "CurbOS Admin",
+                style = MaterialTheme.typography.bodyMedium,
+                color = ElectricLime
+            )
+        }
+    }
+}
+
+@Composable
+fun MetricsSection(revenue: Double, orders: Int) {
+    Row(modifier = Modifier.fillMaxWidth().height(100.dp)) {
+        // Revenue Card
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+             modifier = Modifier.weight(1f).fillMaxHeight()
+        ) {
+             Column(
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+                verticalArrangement = Arrangement.Center
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                     Text("DANGER ZONE", style = MaterialTheme.typography.titleMedium, color = Color.Red, fontWeight = FontWeight.Bold)
-                     Spacer(modifier = Modifier.height(16.dp))
-                     
-                     Button(
-                        onClick = { viewModel.resetToDemoData() },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                     ) {
-                         Text("RESET TO DEMO DATA")
-                     }
-                     
-                     Spacer(modifier = Modifier.height(8.dp))
-                     
-                     OutlinedButton(
-                        onClick = { viewModel.clearAllData() },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
-                     ) {
-                         Text("CLEAR ALL DATA")
-                     }
-                }
+                Text("Revenue", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha=0.7f))
+                Text("$%.2f".format(revenue), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            }
+        }
+        
+        Spacer(modifier = Modifier.width(12.dp))
+        
+        // Orders Card
+        Card(
+             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+             modifier = Modifier.weight(1f).fillMaxHeight()
+        ) {
+             Column(
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text("Orders", style = MaterialTheme.typography.labelMedium, color = Color.Gray)
+                Text(orders.toString(), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
             }
         }
     }
 }
 
 @Composable
-fun KpiCard(title: String, value: String, modifier: Modifier = Modifier) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        modifier = modifier
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(text = value, style = MaterialTheme.typography.headlineSmall, color = ElectricLime, fontWeight = FontWeight.Bold)
-            Text(text = title, style = MaterialTheme.typography.labelMedium, color = Color.Gray)
+fun ActionGrid(
+    onMenuCatalog: () -> Unit,
+    onModifiers: () -> Unit,
+    onSync: () -> Unit,
+    onPushOrders: () -> Unit,
+    onExportCsv: () -> Unit,
+    onP2P: () -> Unit
+) {
+    // 2-Column Grid Layout manual implementation for scroll compatibility
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+             ActionCard(
+                 title = "Menu Catalog", 
+                 icon = Icons.Filled.MenuBook, 
+                 color = ElectricLime, 
+                 onClick = onMenuCatalog, 
+                 modifier = Modifier.weight(1f)
+             )
+             ActionCard(
+                 title = "Modifiers", 
+                 icon = Icons.Filled.Edit, 
+                 color = MaterialTheme.colorScheme.tertiary, 
+                 onClick = onModifiers, 
+                 modifier = Modifier.weight(1f)
+             )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+             ActionCard(
+                 title = "Sync Menu", 
+                 icon = Icons.Filled.CloudDownload, 
+                 color = MaterialTheme.colorScheme.surfaceVariant, 
+                 textColor = Color.White,
+                 onClick = onSync, 
+                 modifier = Modifier.weight(1f)
+             )
+             ActionCard(
+                 title = "Push Orders", 
+                 icon = Icons.Filled.CloudUpload, 
+                 color = MaterialTheme.colorScheme.surfaceVariant, 
+                 textColor = Color.White,
+                 onClick = onPushOrders, 
+                 modifier = Modifier.weight(1f)
+             )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+             ActionCard(
+                 title = "Export CSV", 
+                 icon = Icons.Filled.TableChart, 
+                 color = MaterialTheme.colorScheme.surfaceVariant, 
+                 textColor = Color.White,
+                 onClick = onExportCsv, 
+                 modifier = Modifier.weight(1f)
+             )
+             ActionCard(
+                 title = "P2P Setup", 
+                 icon = Icons.Filled.Share, 
+                 color = MaterialTheme.colorScheme.surfaceVariant, 
+                 textColor = Color.White,
+                 onClick = onP2P, 
+                 modifier = Modifier.weight(1f)
+             )
         }
     }
 }
+
+@Composable
+fun ActionCard(
+    title: String, 
+    icon: ImageVector, 
+    color: Color, 
+    textColor: Color = Color.Black,
+    onClick: () -> Unit, 
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.height(110.dp).clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = color)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(12.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.size(28.dp))
+            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = textColor)
+        }
+    }
+}
+
+@Composable
+fun BestSellersCard(bestSellers: List<Pair<String, Int>>) {
+     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+        Column(Modifier.padding(16.dp)) {
+             Text("Top Movers", style = MaterialTheme.typography.titleSmall, color = Color.Gray)
+             Spacer(modifier = Modifier.height(12.dp))
+             
+             if (bestSellers.isEmpty()) {
+                 Text("No sales data yet.", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+             } else {
+                 bestSellers.forEachIndexed { index, pair ->
+                     Row(
+                         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                         horizontalArrangement = Arrangement.SpaceBetween
+                     ) {
+                         Text("${index + 1}. ${pair.first}", color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                         Text("${pair.second}", color = ElectricLime, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                     }
+                     if (index < bestSellers.size - 1) {
+                        HorizontalDivider(color = Color.White.copy(alpha=0.1f))
+                     }
+                 }
+             }
+        }
+     }
+}
+
+@Composable
+fun SettingItem(content: @Composable () -> Unit) {
+    Box(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+        content()
+    }
+}
+
+@Composable
+fun SettingSwitchItem(title: String, subtitle: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, color = Color.White, fontWeight = FontWeight.Medium)
+            Text(subtitle, color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.Black,
+                checkedTrackColor = ElectricLime
+            )
+        )
+    }
+}
+
+@Composable
+fun DangerZone(onResetDemo: () -> Unit, onClearAll: () -> Unit) {
+     Card(
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF2B1515)), // Dark red bg
+        shape = RoundedCornerShape(12.dp)
+     ) {
+         Column(Modifier.padding(16.dp)) {
+             Text("Danger Zone", color = Color(0xFFFF6B6B), fontWeight = FontWeight.Bold)
+             Spacer(modifier = Modifier.height(16.dp))
+             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                 OutlinedButton(
+                     onClick = onResetDemo, 
+                     modifier = Modifier.weight(1f),
+                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF6B6B))
+                 ) {
+                     Text("Reset Demo")
+                 }
+                 OutlinedButton(
+                     onClick = onClearAll,
+                     modifier = Modifier.weight(1f),
+                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
+                 ) {
+                     Text("Clear All")
+                 }
+             }
+         }
+     }
+}
+
+@Composable
+fun UpdateCard(
+    currentVersion: String,
+    isUpdateAvailable: Boolean,
+    latestVersion: String?,
+    downloadProgress: Int,
+    onCheck: () -> Unit,
+    onUpdate: () -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+        border = if (isUpdateAvailable) androidx.compose.foundation.BorderStroke(1.dp, SafetyOrange) else null
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = if (isUpdateAvailable) "Update Available ($latestVersion)" else "App is up to date",
+                    color = if (isUpdateAvailable) SafetyOrange else Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+                Text("v$currentVersion", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+                
+                if (downloadProgress > 0) {
+                     Spacer(modifier = Modifier.height(8.dp))
+                     LinearProgressIndicator(
+                        progress = downloadProgress / 100f,
+                        color = SafetyOrange,
+                        modifier = Modifier.fillMaxWidth().height(4.dp)
+                     )
+                }
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            if (isUpdateAvailable) {
+                 Button(onClick = onUpdate, colors = ButtonDefaults.buttonColors(containerColor = SafetyOrange)) {
+                     Text("Update")
+                 }
+            } else {
+                 TextButton(onClick = onCheck) { Text("Check") }
+            }
+        }
+    }
+}
+
 
 @Composable
 fun HourlySalesChart(hourlySales: Map<Int, Double>, modifier: Modifier = Modifier) {
@@ -406,6 +456,7 @@ fun HourlySalesChart(hourlySales: Map<Int, Double>, modifier: Modifier = Modifie
     Canvas(modifier = modifier.background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(8.dp))) {
         val barWidth = size.width / 24f
         val maxBarHeight = size.height 
+        val barSpacing = 4f
 
         for (hour in 0..23) {
             val sales = hourlySales[hour] ?: 0.0
@@ -415,7 +466,7 @@ fun HourlySalesChart(hourlySales: Map<Int, Double>, modifier: Modifier = Modifie
                 drawRect(
                     brush = ElectricGradient,
                     topLeft = Offset(x = hour * barWidth, y = (size.height - barHeight).toFloat()),
-                    size = Size(width = barWidth - 4f, height = barHeight.toFloat()) // -4f for spacing
+                    size = Size(width = barWidth - barSpacing, height = barHeight.toFloat()) 
                 )
             }
         }
