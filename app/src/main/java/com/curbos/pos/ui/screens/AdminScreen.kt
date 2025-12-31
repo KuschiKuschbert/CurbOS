@@ -157,9 +157,7 @@ fun AdminScreen(
                 Text("MENU CATALOG & EDITOR \uD83D\uDCDD", color = Color.Black, fontWeight = FontWeight.Bold)
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
 
             Button(
                 onClick = {
@@ -269,7 +267,7 @@ fun AdminScreen(
                         }
                     }
                     
-                    }
+
 
                     if (uiState.downloadProgress in 1..99) {
                         Spacer(modifier = Modifier.height(16.dp))
