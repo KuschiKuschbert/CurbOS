@@ -236,7 +236,25 @@ fun AdminScreen(
                         }
                     }
                     
-                    if (uiState.isUpdateAvailable) {
+                    }
+
+                    if (uiState.downloadProgress in 1..99) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        LinearProgressIndicator(
+                            progress = uiState.downloadProgress / 100f,
+                            modifier = Modifier.fillMaxWidth().height(8.dp),
+                            color = SafetyOrange,
+                            trackColor = Color.DarkGray
+                        )
+                        Text(
+                            text = "Downloading... ${uiState.downloadProgress}%",
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            modifier = Modifier.align(Alignment.End).padding(top = 4.dp)
+                        )
+                    }
+                    
+                    if (uiState.isUpdateAvailable && uiState.downloadProgress == 0) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "New version ${uiState.latestRelease?.tagName} available!",

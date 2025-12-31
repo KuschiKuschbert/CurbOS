@@ -25,7 +25,8 @@ data class AdminUiState(
     val isUpdateAvailable: Boolean = false,
     val latestRelease: com.curbos.pos.data.remote.GithubRelease? = null,
     val webBaseUrl: String = "https://prepflow.org",
-    val isDeveloperMode: Boolean = false
+    val isDeveloperMode: Boolean = false,
+    val downloadProgress: Int = 0
 )
 
 @dagger.hilt.android.lifecycle.HiltViewModel
@@ -43,6 +44,12 @@ class AdminViewModel @javax.inject.Inject constructor(
     init {
         loadDailyStats()
         loadSettings()
+        
+        viewModelScope.launch {
+            updateManager.downloadProgress.collect { progress ->
+                _uiState.update { it.copy(downloadProgress = progress) }
+            }
+        }
     }
     
     // ... (existing functions)
@@ -194,7 +201,7 @@ class AdminViewModel @javax.inject.Inject constructor(
         profileManager.saveDeveloperMode(enabled)
         _uiState.update { it.copy(isDeveloperMode = enabled) }
         launchCatching {
-             val mode = if (enabled) "Developer Mode (Nightly Builds)" else "Standard Mode (Stable Releases)"
+             val mode = if (enabled) "Developer Mode (Developer Channel)" else "Standard Mode (Stable Releases)"
              SnackbarManager.showMessage("Switched to $mode")
         }
     }

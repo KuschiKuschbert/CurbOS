@@ -1,9 +1,7 @@
-name: Android Debug Build
+name: Developer Release
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
     branches: [ "main" ]
   workflow_dispatch:
 
@@ -38,9 +36,9 @@ jobs:
       id: changelog
       run: |
         git fetch --tags --force
-        if git rev-parse nightly >/dev/null 2>&1; then
-          echo "Changes since last nightly:" > CHANGELOG.txt
-          git log nightly..HEAD --oneline --no-merges >> CHANGELOG.txt
+        if git rev-parse dev >/dev/null 2>&1; then
+          echo "Changes since last dev release:" > CHANGELOG.txt
+          git log dev..HEAD --oneline --no-merges >> CHANGELOG.txt
         else
           echo "Initial build - recent changes:" > CHANGELOG.txt
           git log --oneline -n 15 --no-merges >> CHANGELOG.txt
@@ -68,14 +66,14 @@ jobs:
     - name: Upload Debug APK
       uses: actions/upload-artifact@v4
       with:
-        name: debug-build-${{ env.VERSION_NAME }}
+        name: dev-build-${{ env.VERSION_NAME }}
         path: app/build/outputs/apk/debug/app-debug.apk
 
-    - name: Update Nightly Release
+    - name: Update Developer Release
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: nightly
-        name: Nightly Debug Build
+        tag_name: dev
+        name: Developer Release
         body_path: CHANGELOG.txt
         files: app/build/outputs/apk/debug/app-debug.apk
         prerelease: true

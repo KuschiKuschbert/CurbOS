@@ -88,7 +88,7 @@ android {
         }
         debug {
             val date = SimpleDateFormat("yyyyMMdd-HH").format(Date())
-            versionNameSuffix = "-nightly-$date"
+            versionNameSuffix = "-dev-$date"
             // applicationIdSuffix = ".debug" // Removed to ensure single installation
             signingConfig = signingConfigs.getByName("release")
         }
