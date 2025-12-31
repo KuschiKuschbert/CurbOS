@@ -53,8 +53,14 @@ android {
         manifestPlaceholders["auth0Domain"] = "dev-7myakdl4itf644km.us.auth0.com"
         manifestPlaceholders["auth0Scheme"] = "demo"
         // Enterprise Security: Read secrets from environment (CI) or local.properties (dev)
-        val supabaseUrl = System.getenv("SUPABASE_URL") ?: properties["SUPABASE_URL"]?.toString() ?: ""
-        val supabaseKey = System.getenv("SUPABASE_KEY") ?: properties["SUPABASE_KEY"]?.toString() ?: ""
+        val localProperties = Properties()
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localProperties.load(FileInputStream(localPropertiesFile))
+        }
+
+        val supabaseUrl = System.getenv("SUPABASE_URL") ?: localProperties.getProperty("SUPABASE_URL") ?: ""
+        val supabaseKey = System.getenv("SUPABASE_KEY") ?: localProperties.getProperty("SUPABASE_KEY") ?: ""
 
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_KEY", "\"$supabaseKey\"")

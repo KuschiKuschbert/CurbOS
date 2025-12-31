@@ -6,6 +6,7 @@ import com.curbos.pos.data.TransactionSyncManager
 import com.curbos.pos.common.Result
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 import android.content.Context
@@ -18,7 +19,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 
 class TransactionRepositoryImpl @Inject constructor(
     private val transactionSyncManager: TransactionSyncManager,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    @com.curbos.pos.di.ApplicationScope private val externalScope: kotlinx.coroutines.CoroutineScope
 ) : TransactionRepository {
 
     private fun triggerSync() {
@@ -51,7 +53,11 @@ class TransactionRepositoryImpl @Inject constructor(
             transactionSyncManager.stageTransaction(transaction)
             triggerSync()
             
-            // Fire-and-forget processQueue for immediate retry (non-blocking)
+            // Fire-and-forget processQueue for immediate retry (non-blocking) on Application Scope
+            externalScope.launch {
+                transactionSyncManager.processQueue()
+            }
+            
             // We return Success(true) optimistically because it's safely staged in local DB.
             // If the user's connection is broken, it will sync eventually in background.
             Result.Success(true)
