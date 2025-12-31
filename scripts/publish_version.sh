@@ -5,8 +5,12 @@
 
 NEW_VERSION=$1
 
-# Ensure JAVA_HOME is set
-export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+# Ensure JAVA_HOME is set (fallback to Android Studio JBR on Mac if not set)
+if [ -z "$JAVA_HOME" ]; then
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+    fi
+fi
 
 if [ -z "$NEW_VERSION" ]; then
     echo "Usage: ./publish_version.sh <new_version>"
@@ -36,8 +40,12 @@ fi
 if [ -f "$GRADLE_FILE" ]; then
     echo "Updating $GRADLE_FILE..."
     # Use sed to replace versionName
-    # macOS sed requires empty string for -i
-    sed -i '' "s/val baseVersionName = \".*\"/val baseVersionName = \"$NEW_VERSION\"/" "$GRADLE_FILE"
+    # Cross-platform sed workaround
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "s/val baseVersionName = \".*\"/val baseVersionName = \"$NEW_VERSION\"/" "$GRADLE_FILE"
+    else
+        sed -i "s/val baseVersionName = \".*\"/val baseVersionName = \"$NEW_VERSION\"/" "$GRADLE_FILE"
+    fi
 else
     echo "❌ Could not find app/build.gradle.kts"
     exit 1
