@@ -33,7 +33,7 @@ jobs:
       id: version
       run: |
         # Extract base version (e.g. "0.4.0") from build.gradle.kts
-        BASE_VERSION_FULL=$(grep 'versionName =' app/build.gradle.kts | sed 's/.*= "\(.*\)".*/\1/')
+        BASE_VERSION_FULL=$(grep 'val baseVersionName =' app/build.gradle.kts | sed 's/.*= "\(.*\)".*/\1/')
         
         # Get Major.Minor (e.g. "0.4")
         MAJOR_MINOR=$(echo $BASE_VERSION_FULL | cut -d. -f1-2)

@@ -37,7 +37,7 @@ if [ -f "$GRADLE_FILE" ]; then
     echo "Updating $GRADLE_FILE..."
     # Use sed to replace versionName
     # macOS sed requires empty string for -i
-    sed -i '' "s/versionName = \".*\"/versionName = \"$NEW_VERSION\"/" "$GRADLE_FILE"
+    sed -i '' "s/val baseVersionName = \".*\"/val baseVersionName = \"$NEW_VERSION\"/" "$GRADLE_FILE"
 else
     echo "❌ Could not find app/build.gradle.kts"
     exit 1

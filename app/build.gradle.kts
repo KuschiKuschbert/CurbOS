@@ -39,11 +39,15 @@ android {
         targetSdk = 34
         
         versionCode = getGitCommitCount()
+        
+        // Base version for CI parsing (Do not rename this variable without updating CI/CD scripts)
+        val baseVersionName = "0.4.0"
+        
         // Allow version name to be overridden by -PversionName
         versionName = if (project.hasProperty("versionName")) {
              project.property("versionName").toString()
         } else {
-             "0.4.0"
+             baseVersionName
         }
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
