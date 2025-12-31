@@ -227,7 +227,9 @@ class AdminViewModel @javax.inject.Inject constructor(
     fun installUpdate() {
         val asset = uiState.value.latestRelease?.assets?.firstOrNull { it.name.endsWith(".apk") }
         if (asset != null) {
-            updateManager.downloadAndInstall(asset.downloadUrl)
+            viewModelScope.launch {
+                updateManager.downloadAndInstall(asset.downloadUrl)
+            }
         }
     }
 }
