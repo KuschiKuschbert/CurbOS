@@ -5,6 +5,9 @@
 
 NEW_VERSION=$1
 
+# Ensure JAVA_HOME is set
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+
 if [ -z "$NEW_VERSION" ]; then
     echo "Usage: ./publish_version.sh <new_version>"
     echo "Example: ./publish_version.sh 0.2.4"
@@ -67,17 +70,22 @@ fi
 # We need SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
 if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
     echo "⚠️  Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables."
-    echo "Please set them to update the remote version."
-    echo "Example: export SUPABASE_URL=... && export SUPABASE_SERVICE_ROLE_KEY=..."
-    exit 1
+    echo "Skipping Supabase remote version update..."
+    SKIP_SUPABASE=true
+else
+    SKIP_SUPABASE=false
 fi
 
-echo "Updating Supabase..."
-RESPONSE=$(curl -s -X POST "$SUPABASE_URL/rest/v1/app_settings" \
--H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
--H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
--H "Content-Type: application/json" \
--H "Prefer: resolution=merge-duplicates" \
--d "{ \"key\": \"android_version\", \"value\": \"\\\"$NEW_VERSION\\\"\" }")
+if [ "$SKIP_SUPABASE" = false ]; then
+    echo "Updating Supabase..."
+    RESPONSE=$(curl -s -X POST "$SUPABASE_URL/rest/v1/app_settings" \
+    -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+    -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+    -H "Content-Type: application/json" \
+    -H "Prefer: resolution=merge-duplicates" \
+    -d "{ \"key\": \"android_version\", \"value\": \"\\\"$NEW_VERSION\\\"\" }")
+else
+    echo "⏭️  Skipped Supabase update."
+fi
 
 echo "✅ Version updated to $NEW_VERSION in Gradle and Supabase!"
