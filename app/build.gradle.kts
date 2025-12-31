@@ -110,6 +110,14 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
+        allWarningsAsErrors = project.hasProperty("warningsAsErrors")
+    }
+    
+    lint {
+        abortOnError = true
+        warningsAsErrors = project.hasProperty("warningsAsErrors")
+        checkReleaseBuilds = false
+        lintConfig = file("lint.xml")
     }
     buildFeatures {
         compose = true

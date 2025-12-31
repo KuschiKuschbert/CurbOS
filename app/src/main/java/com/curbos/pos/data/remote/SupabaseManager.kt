@@ -70,7 +70,15 @@ object SupabaseManager {
             client.postgrest["admin_error_logs"].insert(entry)
         } catch (e: Exception) {
             // Failure here must be silent for the logger to avoid direct recursion or crash
-            android.util.Log.e("SupabaseManager", "Failed to insert remote log", e)
+            try {
+                // Ensure Logger is initialized or use android.util.Log if circular dependency
+                // But Logger doesn't depend on SupabaseManager context usually.
+                // Assuming Logger is available.
+                // Actually SupabaseManager is data layer. Logger is common.
+                com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to insert remote log", e)
+            } catch (inner: Exception) {
+                // formatting error?
+            }
         }
     }
 

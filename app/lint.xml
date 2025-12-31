@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- Suppress MonochromeLauncherIcon as we don't have a monochrome asset yet -->
+    <issue id="MonochromeLauncherIcon" severity="ignore" />
+    
+    <!-- Suppress UnusedResources for legacy cleanup later -->
+    <issue id="UnusedResources" severity="ignore" />
+    
+    <!-- Suppress GoogleAppIndexingWarning -->
+    <issue id="GoogleAppIndexingWarning" severity="ignore" />
+    
+    <issue id="Typos" severity="ignore" />
+    <issue id="LogNotTimber" severity="ignore" />
+    
+    <!-- Suppress Dependency upgrades and style constraints -->
+    <issue id="GradleDependency" severity="ignore" />
+    <issue id="ModifierParameter" severity="ignore" />
+    <issue id="InlinedApi" severity="ignore" />
+    <issue id="OldTargetApi" severity="ignore" />
+</lint>

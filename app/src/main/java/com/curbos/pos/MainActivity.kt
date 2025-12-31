@@ -539,9 +539,6 @@ class MainActivity : AppCompatActivity() {
                              com.curbos.pos.ui.screens.AdminScreen(
                                  viewModel = adminViewModel,
                                  csvExportManager = csvExportManager,
-                                 onLaunchCustomerDisplay = {
-                                     navController.navigate("customer_display") { launchSingleTop = true }
-                                 },
                                  onLaunchP2PSetup = {
                                      navController.navigate("p2p_setup") { launchSingleTop = true }
                                  },
@@ -582,8 +579,7 @@ class MainActivity : AppCompatActivity() {
                                         menuRepository.deleteCategory(category)
                                         posDao.deleteItemsByCategory(category)
                                     }
-                                },
-                                onNavigateBack = { navController.popBackStack() }
+                                }
                             )
                         }
 
@@ -595,10 +591,10 @@ class MainActivity : AppCompatActivity() {
                             // Reuse MenuManagementScreen but start at Modifiers tab
                             com.curbos.pos.ui.screens.MenuManagementScreen(
                                 menuItems = menuItems,
-                                onSave = { item -> 
+                                onSave = { _ -> 
                                     // Should not happen in modifiers tab but required by signature
                                 },
-                                onDelete = { item -> },
+                                onDelete = { _ -> },
                                 modifiers = modifiers,
                                 onSaveModifier = { modifier ->
                                     coroutineScope.launch {

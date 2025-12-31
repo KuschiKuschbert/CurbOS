@@ -10,10 +10,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.rounded.*
@@ -42,7 +42,6 @@ import java.time.ZoneId
 fun AdminScreen(
     viewModel: com.curbos.pos.ui.viewmodel.AdminViewModel,
     csvExportManager: CsvExportManager? = null,
-    onLaunchCustomerDisplay: () -> Unit = {},
     onLaunchP2PSetup: () -> Unit = {},
     onNavigateToMenuCatalog: () -> Unit = {},
     onNavigateToModifiers: () -> Unit = {}
@@ -242,7 +241,7 @@ fun ActionGrid(
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
              ActionCard(
                  title = "Menu Catalog", 
-                 icon = Icons.Filled.MenuBook, 
+                 icon = Icons.AutoMirrored.Filled.MenuBook, 
                  color = ElectricLime, 
                  onClick = onMenuCatalog, 
                  modifier = Modifier.weight(1f)
@@ -430,7 +429,7 @@ fun UpdateCard(
                 if (downloadProgress > 0) {
                      Spacer(modifier = Modifier.height(8.dp))
                      LinearProgressIndicator(
-                        progress = downloadProgress / 100f,
+                        progress = { downloadProgress / 100f },
                         color = SafetyOrange,
                         modifier = Modifier.fillMaxWidth().height(4.dp)
                      )

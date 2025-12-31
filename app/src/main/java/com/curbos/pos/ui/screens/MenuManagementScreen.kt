@@ -29,7 +29,7 @@ fun MenuManagementScreen(
     onDeleteModifier: (com.curbos.pos.data.model.ModifierOption) -> Unit = {},
     initialTabIndex: Int = 0
 ) {
-    var selectedTabIndex by remember { mutableStateOf(initialTabIndex) }
+    var selectedTabIndex by remember { mutableIntStateOf(initialTabIndex) }
     val tabs = listOf("Menu Items", "Modifiers")
 
     // Item State

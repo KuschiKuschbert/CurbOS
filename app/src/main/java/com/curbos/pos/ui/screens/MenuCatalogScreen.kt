@@ -25,8 +25,7 @@ fun MenuCatalogScreen(
     onCategoryClick: (String) -> Unit,
     onAddCategory: (String) -> Unit,
     onRenameCategory: (String, String) -> Unit,
-    onDeleteCategory: (String) -> Unit,
-    onNavigateBack: () -> Unit
+    onDeleteCategory: (String) -> Unit
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
     var categoryToRename by remember { mutableStateOf<String?>(null) }

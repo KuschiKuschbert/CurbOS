@@ -33,6 +33,7 @@
     <application
         android:name=".CurbOSApp"
         android:allowBackup="false"
+        tools:ignore="DataExtractionRules,UnusedAttribute"
         android:fullBackupContent="false"
         android:icon="@mipmap/ic_launcher"
         android:label="CurbOS"

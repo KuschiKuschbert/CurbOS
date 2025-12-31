@@ -14,7 +14,12 @@ class InstallStatusReceiver : BroadcastReceiver() {
         when (status) {
             PackageInstaller.STATUS_PENDING_USER_ACTION -> {
                 Logger.i("InstallStatusReceiver", "Requesting user action")
-                val confirmIntent = intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+                val confirmIntent = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra(Intent.EXTRA_INTENT)
+                }
                 confirmIntent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(confirmIntent)
             }
