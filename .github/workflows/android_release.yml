@@ -34,9 +34,9 @@ jobs:
       - name: Build Release APK
         run: ./gradlew assembleRelease
         env:
-          SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          SIGNING_STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: "key0"
+          SIGNING_KEY_PASSWORD: "CurbOS_Secure_2025!"
+          SIGNING_STORE_PASSWORD: "CurbOS_Secure_2025!"
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
 
