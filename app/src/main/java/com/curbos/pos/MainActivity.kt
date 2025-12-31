@@ -247,7 +247,9 @@ class MainActivity : AppCompatActivity() {
                                 onClick = {
                                     val asset = updateRelease?.assets?.firstOrNull { it.name.endsWith(".apk") }
                                     if (asset != null) {
-                                        updateManager.downloadAndInstall(asset.downloadUrl)
+                                        scope.launch {
+                                            updateManager.downloadAndInstall(asset.downloadUrl)
+                                        }
                                     }
                                     updateRelease = null
                                 }
