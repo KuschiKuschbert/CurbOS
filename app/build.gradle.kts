@@ -39,7 +39,12 @@ android {
         targetSdk = 34
         
         versionCode = getGitCommitCount()
-        versionName = "0.4.0"
+        // Allow version name to be overridden by -PversionName
+        versionName = if (project.hasProperty("versionName")) {
+             project.property("versionName").toString()
+        } else {
+             "0.4.0"
+        }
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -88,7 +93,7 @@ android {
         }
         debug {
             val date = SimpleDateFormat("yyyyMMdd-HH").format(Date())
-            versionNameSuffix = "-dev-$date"
+            // versionNameSuffix = "-dev-$date" // Removed to allow clean versioning from CI
             // applicationIdSuffix = ".debug" // Removed to ensure single installation
             signingConfig = signingConfigs.getByName("release")
         }

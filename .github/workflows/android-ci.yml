@@ -1,0 +1,60 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Decode Keystore
+      run: |
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/keystore.jks
+
+    - name: Determine Version
+      id: version
+      run: |
+        # Extract base version (e.g. "0.4.0") from build.gradle.kts
+        BASE_VERSION_FULL=$(grep 'versionName =' app/build.gradle.kts | sed 's/.*= "\(.*\)".*/\1/')
+        
+        # Get Major.Minor (e.g. "0.4")
+        MAJOR_MINOR=$(echo $BASE_VERSION_FULL | cut -d. -f1-2)
+        
+        # Construct new version: Major.Minor.RunNumber.69
+        NEW_VERSION="${MAJOR_MINOR}.${{ github.run_number }}.69"
+        
+        echo "Computed Version: $NEW_VERSION"
+        echo "VERSION_NAME=$NEW_VERSION" >> $GITHUB_ENV
+
+    - name: Build Debug APK
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        SIGNING_STORE_PASSWORD: "CurbOS_Secure_2025!"
+        SIGNING_KEY_ALIAS: "key0"
+        SIGNING_KEY_PASSWORD: "CurbOS_Secure_2025!"
+      run: ./gradlew assembleDebug -PversionName=${{ env.VERSION_NAME }}
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: curbos-v${{ env.VERSION_NAME }}
+        path: app/build/outputs/apk/debug/app-debug.apk
