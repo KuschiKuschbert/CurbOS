@@ -7,7 +7,7 @@ import com.curbos.pos.common.Result
 interface MenuRepository {
     suspend fun fetchMenuItems(): Result<List<MenuItem>>
     suspend fun upsertMenuItem(item: MenuItem): Result<Unit>
-    suspend fun upsertMenuItem(item: MenuItem): Result<Unit>
+
     suspend fun deleteMenuItem(id: String): Result<Unit>
     
     // Category Operations (Batch)
