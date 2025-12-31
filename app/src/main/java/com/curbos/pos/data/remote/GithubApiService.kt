@@ -19,6 +19,7 @@ interface GithubApiService {
     ): GithubRelease
 }
 
+data class GithubRelease(
     @SerializedName("tag_name") val tagName: String,
     @SerializedName("name") val name: String,
     @SerializedName("body") val body: String,
