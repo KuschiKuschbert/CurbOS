@@ -549,6 +549,7 @@ fun QuickSalesScreen(
                 customer = uiState.selectedCustomer!!,
                 rewards = uiState.loyaltyRewards,
                 onRedeem = { reward -> viewModel.redeemReward(reward) },
+                onApplyBonus = { action -> viewModel.applyBonusMiles(action) },
                 onDismiss = { viewModel.hideLoyaltyDialog() }
             )
         }
@@ -1398,6 +1399,7 @@ fun LoyaltyRewardsDialog(
     customer: Customer,
     rewards: List<LoyaltyReward>,
     onRedeem: (LoyaltyReward) -> Unit,
+    onApplyBonus: (LoyaltyConstants.BonusAction) -> Unit,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -1443,7 +1445,14 @@ fun LoyaltyRewardsDialog(
                          text = { Row(verticalAlignment = Alignment.CenterVertically) {
                              Icon(Icons.Default.Map, null, modifier = Modifier.size(16.dp))
                              Spacer(modifier = Modifier.width(8.dp))
-                             Text("Passport")
+                              Text("Passport")
+                         }}
+                    )
+                    Tab(
+                         selected = selectedTab == 2,
+                         onClick = { selectedTab = 2 },
+                         text = { Row(verticalAlignment = Alignment.CenterVertically) {
+                             Text("Bonuses")
                          }}
                     )
                 }
@@ -1485,11 +1494,36 @@ fun LoyaltyRewardsDialog(
                             RewardItemRow(reward = reward, canAfford = canAfford, onRedeem = { onRedeem(reward) })
                         }
                      }
-                } else {
+                } else if (selectedTab == 1) {
                     // Passport Content
                     PassportContent(customer = customer)
+                } else {
+                     // Bonuses
+                     BonusActionsList(onApplyBonus = onApplyBonus)
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun BonusActionsList(onApplyBonus: (LoyaltyConstants.BonusAction) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        LoyaltyConstants.BonusAction.values().forEach { action ->
+             Button(
+                 onClick = { onApplyBonus(action) },
+                 modifier = Modifier.fillMaxWidth().height(60.dp),
+                 colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)
+             ) {
+                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                      Row(verticalAlignment = Alignment.CenterVertically) {
+                          Text(action.iconEmoji, style = MaterialTheme.typography.titleLarge)
+                          Spacer(modifier = Modifier.width(16.dp))
+                          Text(action.title, color = Color.White, fontWeight = FontWeight.Bold)
+                      }
+                      Text("+${action.miles} Miles", color = ElectricLime, fontWeight = FontWeight.Bold)
+                 }
+             }
         }
     }
 }

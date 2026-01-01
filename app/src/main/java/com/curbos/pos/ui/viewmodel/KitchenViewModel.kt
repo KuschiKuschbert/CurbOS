@@ -143,7 +143,11 @@ class KitchenViewModel @javax.inject.Inject constructor(
             
             // P2P Client Mode: Send Status Update to Host
             if (!p2pConnectivityManager.isHosting && p2pConnectivityManager.connectedEndpoints.value.isNotEmpty()) {
-                val updatedTx = transaction.copy(fulfillmentStatus = nextStatus)
+                val updatedTx = transaction.copy(
+                    fulfillmentStatus = nextStatus,
+                    // If moving to COMPLETED, mark all items as completed too for consistency
+                    items = if (nextStatus == "COMPLETED") transaction.items.map { it.copy(isCompleted = true) } else transaction.items
+                )
                 val msg = com.curbos.pos.data.p2p.P2PMessage(
                     type = com.curbos.pos.data.p2p.MESSAGE_TYPE.STATUS_UPDATE,
                     payload = json.encodeToString(updatedTx)
@@ -161,15 +165,18 @@ class KitchenViewModel @javax.inject.Inject constructor(
             }
 
             // Online / Host Mode
-            // Robust Sync: Always stage locally first, broadast, and try to sync.
-            // REFACTOR: Use updateTransactionStatus for lighter network request (PATCH)
+            // Robust Sync: Always stage locally first, broadcast, and try to sync.
             
             launch {
-                // Repository handles Fast Path (PATCH) + Fallback (Stage/Sync)
-                transactionRepository.updateTransactionStatus(transaction.id, nextStatus)
+                val updatedTx = transaction.copy(
+                    fulfillmentStatus = nextStatus,
+                    items = if (nextStatus == "COMPLETED") transaction.items.map { it.copy(isCompleted = true) } else transaction.items
+                )
+                
+                // Use full updateTransaction to capture item changes if any
+                transactionRepository.updateTransaction(updatedTx)
                 
                 // Optimistically update UI
-                 val updatedTx = transaction.copy(fulfillmentStatus = nextStatus)
                  _uiState.update { state ->
                      val current = state.activeOrders.toMutableList()
                      if (updatedTx.fulfillmentStatus == "COMPLETED") {
@@ -180,6 +187,51 @@ class KitchenViewModel @javax.inject.Inject constructor(
                      }
                      state.copy(activeOrders = current)
                  }
+            }
+        }
+    }
+
+    fun toggleItemCompletion(transaction: Transaction, itemIndex: Int) {
+        viewModelScope.launch {
+            if (itemIndex < 0 || itemIndex >= transaction.items.size) return@launch
+
+            val currentItems = transaction.items.toMutableList()
+            val item = currentItems[itemIndex]
+            val newItem = item.copy(isCompleted = !item.isCompleted)
+            currentItems[itemIndex] = newItem
+
+            // Smart Logic: Check if ALL items are now completed
+            val allCompleted = currentItems.all { it.isCompleted }
+            val nextStatus = if (allCompleted && transaction.fulfillmentStatus != "COMPLETED") {
+                "READY" 
+            } else {
+                transaction.fulfillmentStatus
+            }
+
+            val updatedTx = transaction.copy(
+                items = currentItems,
+                fulfillmentStatus = nextStatus
+            )
+
+            // P2P Support for Item Updates
+            if (!p2pConnectivityManager.isHosting && p2pConnectivityManager.connectedEndpoints.value.isNotEmpty()) {
+                 val msg = com.curbos.pos.data.p2p.P2PMessage(
+                    type = com.curbos.pos.data.p2p.MESSAGE_TYPE.STATUS_UPDATE, // We reuse STATUS_UPDATE or create ORDER_UPDATE
+                    payload = json.encodeToString(updatedTx)
+                )
+                p2pConnectivityManager.sendMessage(msg)
+            } else {
+                 transactionRepository.updateTransaction(updatedTx)
+            }
+
+            // Optimistic UI Update
+            _uiState.update { state ->
+                val current = state.activeOrders.toMutableList()
+                val idx = current.indexOfFirst { it.id == transaction.id }
+                if (idx != -1) {
+                    current[idx] = updatedTx
+                }
+                state.copy(activeOrders = current)
             }
         }
     }

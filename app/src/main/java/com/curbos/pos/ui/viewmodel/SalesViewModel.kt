@@ -352,6 +352,35 @@ class SalesViewModel @javax.inject.Inject constructor(
              reportError("This reward has no defined discount amount.")
         }
     }
+
+    fun applyBonusMiles(action: LoyaltyConstants.BonusAction) {
+        val currentState = _uiState.value
+        val customer = currentState.selectedCustomer ?: return
+        
+        val earned = action.miles.toDouble()
+        val currentLifetime = customer.lifetimeMiles
+        val currentRedeemable = customer.redeemableMiles
+        
+        val newLifetime = currentLifetime + earned
+        val newRedeemable = currentRedeemable + earned
+        
+        val newRank = LoyaltyConstants.TacoRank.fromMiles(newLifetime).rankName
+        
+        val updatedCustomer = customer.copy(
+            lifetimeMiles = newLifetime,
+            redeemableMiles = newRedeemable,
+            currentRank = newRank
+        )
+        
+        launchCatching {
+            transactionRepository.createOrUpdateCustomer(updatedCustomer)
+            
+            // Optimistic update UI
+            _uiState.update { it.copy(selectedCustomer = updatedCustomer) }
+            
+            com.curbos.pos.common.SnackbarManager.showSuccess("Bonus Applied: ${action.title} (+${action.miles})")
+        }
+    }
     
     fun showLoyaltyDialog() {
         _uiState.update { it.copy(isLoyaltyDialogVisible = true) }

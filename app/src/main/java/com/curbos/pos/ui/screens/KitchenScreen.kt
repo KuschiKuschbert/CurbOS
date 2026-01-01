@@ -3,6 +3,7 @@ package com.curbos.pos.ui.screens
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -18,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,6 +36,7 @@ fun KitchenScreen(
     onExitKitchenMode: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var isAllDayView by remember { mutableStateOf(false) }
 
     // Keep Screen On
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -81,30 +84,41 @@ fun KitchenScreen(
             } else {
                 BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                     val screenWidth = maxWidth
-                    // Responsive Logic:
-                    // < 600.dp -> Phone (1 Column)
-                    // >= 600.dp -> Tablet (Adaptive)
                     val minCardWidth = if (screenWidth < 600.dp) screenWidth else 300.dp
 
                     LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = minCardWidth),
+                        columns = GridCells.Adaptive(minSize = if (isAllDayView) 200.dp else minCardWidth),
                         modifier = Modifier.fillMaxSize(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Header as the first item spanning full width
+                        // Header
                         item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-                           Row(
+                            Row(
                                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    "KITCHEN DISPLAY", // Shortened from "KITCHEN DISPLAY SYSTEM"
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 20.sp // Reduced from 24
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        "KITCHEN DISPLAY", 
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 20.sp 
+                                    )
+                                    Spacer(modifier = Modifier.width(16.dp))
+                                    
+                                    Button(
+                                        onClick = { isAllDayView = !isAllDayView },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = if (isAllDayView) ElectricLime else Color.DarkGray
+                                        ),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                        modifier = Modifier.height(36.dp)
+                                    ) {
+                                        Text(if (isAllDayView) "ALL DAY 📊" else "ORDERS 📋", color = if (isAllDayView) Color.Black else Color.White, fontSize = 12.sp)
+                                    }
+                                }
                                 
                                 Button(
                                     onClick = onExitKitchenMode,
@@ -117,20 +131,46 @@ fun KitchenScreen(
                             }
                         } 
         
-                        if (uiState.activeOrders.isEmpty()) {
-                           item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-                                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                                    Text("All quiet in the kitchen... 👨‍🍳", color = Color.Gray, fontSize = 20.sp)
+                        if (isAllDayView) {
+                            // --- ALL DAY VIEW LOGIC ---
+                            val aggregatedItems = uiState.activeOrders
+                                .filter { it.fulfillmentStatus != "READY" && it.fulfillmentStatus != "COMPLETED" }
+                                .flatMap { it.items }
+                                .filter { !it.isCompleted }
+                                .groupBy { it.name }
+                                .mapValues { (_, items) -> items.sumOf { it.quantity } }
+                                .toList()
+                                .sortedByDescending { it.second }
+
+                            if (aggregatedItems.isEmpty()) {
+                                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                                    Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                                        Text("No active items to cook! 🔥", color = Color.Gray, fontSize = 20.sp)
+                                    }
                                 }
-                           }
+                            } else {
+                                items(aggregatedItems) { (name, totalQty) ->
+                                    AllDaySummaryCard(name, totalQty)
+                                }
+                            }
                         } else {
-                            items(uiState.activeOrders) { transaction ->
-                                OrderCard(
-                                    transaction = transaction, 
-                                    isSimplifiedFlow = uiState.isSimplifiedFlow,
-                                    onBump = { viewModel.bumpOrder(transaction) },
-                                    onComplete = { viewModel.completeOrder(transaction) }
-                                )
+                            // --- ORDER VIEW LOGIC ---
+                            if (uiState.activeOrders.isEmpty()) {
+                               item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                                    Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                                        Text("All quiet in the kitchen... 👨‍🍳", color = Color.Gray, fontSize = 20.sp)
+                                    }
+                               }
+                            } else {
+                                items(uiState.activeOrders) { transaction ->
+                                    OrderCard(
+                                        transaction = transaction, 
+                                        isSimplifiedFlow = uiState.isSimplifiedFlow,
+                                        onBump = { viewModel.bumpOrder(transaction) },
+                                        onComplete = { viewModel.completeOrder(transaction) },
+                                        onItemClick = { index -> viewModel.toggleItemCompletion(transaction, index) }
+                                    )
+                                }
                             }
                         }
                     }
@@ -141,7 +181,47 @@ fun KitchenScreen(
 }
 
 @Composable
-fun OrderCard(transaction: Transaction, isSimplifiedFlow: Boolean, onBump: () -> Unit, onComplete: () -> Unit) {
+fun AllDaySummaryCard(name: String, quantity: Int) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF222222)),
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, Color.Gray),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(100.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = quantity.toString(),
+                color = ElectricLime,
+                fontSize = 48.sp,
+                fontWeight = FontWeight.Black
+            )
+            Text(
+                text = name.uppercase(),
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+
+@Composable
+fun OrderCard(
+    transaction: Transaction, 
+    isSimplifiedFlow: Boolean, 
+    onBump: () -> Unit, 
+    onComplete: () -> Unit,
+    onItemClick: (Int) -> Unit
+) {
     val elapsedTime = System.currentTimeMillis() - transaction.timestamp
     val elapsedMinutes = TimeUnit.MILLISECONDS.toMinutes(elapsedTime)
     
@@ -214,12 +294,19 @@ fun OrderCard(transaction: Transaction, isSimplifiedFlow: Boolean, onBump: () ->
                 modifier = Modifier
                     .fillMaxWidth()
             ) {
-                transaction.items.forEach { itemRow ->
-                    Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                        Row(verticalAlignment = Alignment.Top) {
+                transaction.items.forEachIndexed { index, itemRow ->
+                    val isCompleted = itemRow.isCompleted
+                    val opacity = if (isCompleted) 0.3f else 1.0f
+                    val textDecoration = if (isCompleted) androidx.compose.ui.text.style.TextDecoration.LineThrough else null
+
+                    Column(modifier = Modifier
+                        .padding(vertical = 8.dp)
+                        .clickable { onItemClick(index) }
+                    ) {
+                        Row(verticalAlignment = Alignment.Top, modifier = Modifier.alpha(opacity)) {
                             // Quantity Badge
                             Surface(
-                                color = Color.White,
+                                color = if (isCompleted) Color.Gray else Color.White,
                                 shape = RoundedCornerShape(4.dp),
                                 modifier = Modifier.size(32.dp)
                             ) {
@@ -228,7 +315,8 @@ fun OrderCard(transaction: Transaction, isSimplifiedFlow: Boolean, onBump: () ->
                                         text = itemRow.quantity.toString(),
                                         color = Color.Black,
                                         fontWeight = FontWeight.Black,
-                                        fontSize = 18.sp
+                                        fontSize = 18.sp,
+                                        textDecoration = textDecoration
                                     )
                                 }
                             }
@@ -240,7 +328,8 @@ fun OrderCard(transaction: Transaction, isSimplifiedFlow: Boolean, onBump: () ->
                                 color = Color.White,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
-                                lineHeight = 22.sp
+                                lineHeight = 22.sp,
+                                textDecoration = textDecoration
                             )
                         }
                         
@@ -248,10 +337,11 @@ fun OrderCard(transaction: Transaction, isSimplifiedFlow: Boolean, onBump: () ->
                         if (itemRow.modifiers.isNotEmpty()) {
                             Text(
                                 text = itemRow.modifiers.joinToString(", ") { it.uppercase() },
-                                color = ElectricLime.copy(alpha = 0.8f),
+                                color = ElectricLime.copy(alpha = 0.8f * opacity),
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(start = 44.dp, top = 4.dp)
+                                modifier = Modifier.padding(start = 44.dp, top = 4.dp),
+                                textDecoration = textDecoration
                             )
                         }
                     }

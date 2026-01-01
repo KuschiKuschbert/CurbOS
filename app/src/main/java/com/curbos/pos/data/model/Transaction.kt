@@ -59,7 +59,8 @@ data class TransactionItem(
     val name: String,
     val price: Double,
     val quantity: Int = 1,
-    val modifiers: List<String> = emptyList()
+    val modifiers: List<String> = emptyList(),
+    val isCompleted: Boolean = false
 )
 
 object StringifiedItemsSerializer : kotlinx.serialization.KSerializer<List<TransactionItem>> {
