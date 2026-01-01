@@ -89,9 +89,7 @@ android {
                 storePassword = System.getenv("SIGNING_STORE_PASSWORD") ?: properties["storePassword"]?.toString() ?: "CurbOS_Secure_2025!"
                 keyAlias = System.getenv("SIGNING_KEY_ALIAS") ?: properties["keyAlias"]?.toString() ?: "key0"
                 keyPassword = System.getenv("SIGNING_KEY_PASSWORD") ?: properties["keyPassword"]?.toString() ?: "CurbOS_Secure_2025!"
-                println("DEBUG: Keystore found at ${keystoreFile.absolutePath}")
             } else {
-                 println("DEBUG: CI Env: ${System.getenv("CI")}")
                  println("Release keystore not found at ${keystoreFile.absolutePath}, skipping signing config.")
             }
         }

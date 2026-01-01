@@ -58,9 +58,6 @@ echo "🧹 Cleaning project to ensure fresh build..."
 PROJECT_ROOT=$(dirname "$(dirname "$(realpath "$0")")")
 cd "$PROJECT_ROOT"
 
-echo "DEBUG: Listing app directory to verify keystore:"
-ls -l app/
-
 if ./gradlew clean; then
     echo "✅ Project cleaned."
 else
