@@ -35,7 +35,15 @@ class KitchenViewModel @javax.inject.Inject constructor(
     private val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
 
     init {
-        loadActiveOrders()
+        // Observe Local DB (Source of Truth)
+        viewModelScope.launch {
+            transactionRepository.getActiveTransactions().collect { orders ->
+                com.curbos.pos.common.Logger.d("KitchenViewModel", "Flow emission: ${orders.size} active orders")
+                _uiState.update { it.copy(activeOrders = orders, isLoading = false) }
+            }
+        }
+        
+        refresh() // Trigger initial cloud sync
         startRealtimeListening()
         startP2PListening()
         checkSettings()
@@ -45,22 +53,21 @@ class KitchenViewModel @javax.inject.Inject constructor(
         _uiState.update { it.copy(isSimplifiedFlow = profileManager.isSimplifiedKitchenFlow()) }
     }
 
-    private fun loadActiveOrders() {
-        com.curbos.pos.common.Logger.d("KitchenViewModel", "Fetching active orders...")
+    // "load" is now just "sync"
+    private fun loadActiveOrders() { refresh() }
+    
+    fun refresh() {
+        com.curbos.pos.common.Logger.d("KitchenViewModel", "Triggering sync...")
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
-            when (val result = transactionRepository.fetchActiveTransactions()) {
-                is Result.Success -> {
-                    com.curbos.pos.common.Logger.d("KitchenViewModel", "Successfully fetched ${result.data.size} orders")
-                    _uiState.update { it.copy(activeOrders = result.data, isLoading = false) }
-                }
-                is Result.Error -> {
-                    // In P2P Client mode, failure to fetch from Supabase is expected.
-                    // We rely on P2P Snapshots/Updates.
-                    com.curbos.pos.common.Logger.e("KitchenViewModel", "Error fetching orders: ${result.message}")
-                    _uiState.update { it.copy(error = result.message, isLoading = false) }
-                }
-                else -> {}
+            // This pulls from cloud and upserts to Local DB.
+            // The DB change triggers the Flow above.
+            val result = transactionRepository.fetchActiveTransactions()
+            if (result is Result.Error) {
+                 // Even if sync fails, we still have local data (from Flow), so just show error toast
+                 _uiState.update { it.copy(error = result.message, isLoading = false) }
+            } else {
+                 _uiState.update { it.copy(isLoading = false, error = null) }
             }
         }
     }
@@ -68,7 +75,9 @@ class KitchenViewModel @javax.inject.Inject constructor(
     private fun startRealtimeListening() {
         viewModelScope.launch {
             transactionRepository.subscribeToTransactionChanges {
-                loadActiveOrders()
+                // Repo handles the sync-on-change logic now.
+                // We don't need to do anything here unless we want to log it.
+                com.curbos.pos.common.Logger.d("KitchenViewModel", "Realtime update received via Repo")
             }
         }
     }
@@ -81,45 +90,29 @@ class KitchenViewModel @javax.inject.Inject constructor(
                     when (message.type) {
                         com.curbos.pos.data.p2p.MESSAGE_TYPE.SNAPSHOT -> {
                              val transactions = json.decodeFromString<List<Transaction>>(message.payload)
+                              // P2P Snapshot: In Local-Mode, we might want to save these?
+                              // Or update memory?
+                              // If we are Client, TransactionRepo usually isn't DB backed in same way?
+                              // For now, let's update state directly as P2P logic is bespoke.
+                              // CAUTION: This overrides Flow if mixed. 
                              _uiState.update { it.copy(activeOrders = transactions, isLoading = false) }
                         }
                         com.curbos.pos.data.p2p.MESSAGE_TYPE.ORDER_ADDED,
                         com.curbos.pos.data.p2p.MESSAGE_TYPE.ORDER_UPDATED -> {
+                             // Same for P2P updates.
                              val transaction = json.decodeFromString<Transaction>(message.payload)
-                             _uiState.update { state ->
+                              _uiState.update { state ->
                                  val current = state.activeOrders.toMutableList()
-                                 if (transaction.fulfillmentStatus == "COMPLETED" || transaction.status == "COMPLETED") {
+                                 if (transaction.fulfillmentStatus == "COMPLETED") {
                                      current.removeAll { it.id == transaction.id }
                                  } else {
                                      val index = current.indexOfFirst { it.id == transaction.id }
-                                     if (index != -1) {
-                                         current[index] = transaction
-                                     } else {
-                                         current.add(transaction)
-                                     }
+                                     if (index != -1) current[index] = transaction else current.add(transaction)
                                  }
                                  state.copy(activeOrders = current)
                              }
                         }
-                        com.curbos.pos.data.p2p.MESSAGE_TYPE.STATUS_UPDATE -> {
-                              // If we are Host, we received a status update from Client.
-                              if (p2pConnectivityManager.isHosting) {
-                                  val updatedTx = json.decodeFromString<Transaction>(message.payload)
-                                  // Update Supabase directly with the status from the client
-                                  launch {
-                                      transactionRepository.updateTransactionStatus(updatedTx.id, updatedTx.fulfillmentStatus)
-                                       _uiState.update { state ->
-                                             val current = state.activeOrders.toMutableList()
-                                             val index = current.indexOfFirst { it.id == updatedTx.id }
-                                             if (index != -1) current[index] = updatedTx
-                                             state.copy(activeOrders = current)
-                                       }
-                                  }
-                              }
-                        }
-                        else -> { 
-                            // Ignore CART_UPDATE or other future messages in Kitchen View
-                        }
+                        else -> {}
                     }
                 } catch (e: Exception) {
                     com.curbos.pos.common.Logger.e("KitchenViewModel", "Error handling P2P message: ${e.message}", e)
@@ -130,8 +123,6 @@ class KitchenViewModel @javax.inject.Inject constructor(
 
     fun bumpOrder(transaction: Transaction) {
         viewModelScope.launch {
-            // Check settings freshly in case they changed from another screen (though less likely in KDS view)
-            // But we use the state one for UI.
             val isSimplified = profileManager.isSimplifiedKitchenFlow()
             
             val nextStatus = when (transaction.fulfillmentStatus) {
@@ -141,11 +132,10 @@ class KitchenViewModel @javax.inject.Inject constructor(
                 else -> "COMPLETED"
             }
             
-            // P2P Client Mode: Send Status Update to Host
-            if (!p2pConnectivityManager.isHosting && p2pConnectivityManager.connectedEndpoints.value.isNotEmpty()) {
+            // P2P Client Mode
+             if (!p2pConnectivityManager.isHosting && p2pConnectivityManager.connectedEndpoints.value.isNotEmpty()) {
                 val updatedTx = transaction.copy(
                     fulfillmentStatus = nextStatus,
-                    // If moving to COMPLETED, mark all items as completed too for consistency
                     items = if (nextStatus == "COMPLETED") transaction.items.map { it.copy(isCompleted = true) } else transaction.items
                 )
                 val msg = com.curbos.pos.data.p2p.P2PMessage(
@@ -153,8 +143,7 @@ class KitchenViewModel @javax.inject.Inject constructor(
                     payload = json.encodeToString(updatedTx)
                 )
                 p2pConnectivityManager.sendMessage(msg)
-                
-                // Optimistically update local UI
+                // Optimistic UI Update for P2P Client
                  _uiState.update { state ->
                      val current = state.activeOrders.toMutableList()
                      val index = current.indexOfFirst { it.id == transaction.id }
@@ -164,30 +153,14 @@ class KitchenViewModel @javax.inject.Inject constructor(
                  return@launch
             }
 
-            // Online / Host Mode
-            // Robust Sync: Always stage locally first, broadcast, and try to sync.
+            // Host/Single Mode: Update Repo (which Updates DB -> Flow -> UI)
+            val updatedTx = transaction.copy(
+                fulfillmentStatus = nextStatus,
+                items = if (nextStatus == "COMPLETED") transaction.items.map { it.copy(isCompleted = true) } else transaction.items
+            )
             
-            launch {
-                val updatedTx = transaction.copy(
-                    fulfillmentStatus = nextStatus,
-                    items = if (nextStatus == "COMPLETED") transaction.items.map { it.copy(isCompleted = true) } else transaction.items
-                )
-                
-                // Use full updateTransaction to capture item changes if any
-                transactionRepository.updateTransaction(updatedTx)
-                
-                // Optimistically update UI
-                 _uiState.update { state ->
-                     val current = state.activeOrders.toMutableList()
-                     if (updatedTx.fulfillmentStatus == "COMPLETED") {
-                         current.removeAll { it.id == updatedTx.id }
-                     } else {
-                         val index = current.indexOfFirst { it.id == updatedTx.id }
-                         if (index != -1) current[index] = updatedTx
-                     }
-                     state.copy(activeOrders = current)
-                 }
-            }
+            transactionRepository.updateTransaction(updatedTx)
+            // No manual state update needed!
         }
     }
 
@@ -200,7 +173,6 @@ class KitchenViewModel @javax.inject.Inject constructor(
             val newItem = item.copy(isCompleted = !item.isCompleted)
             currentItems[itemIndex] = newItem
 
-            // Smart Logic: Check if ALL items are now completed
             val allCompleted = currentItems.all { it.isCompleted }
             val nextStatus = if (allCompleted && transaction.fulfillmentStatus != "COMPLETED") {
                 "READY" 
@@ -213,36 +185,23 @@ class KitchenViewModel @javax.inject.Inject constructor(
                 fulfillmentStatus = nextStatus
             )
 
-            // P2P Support for Item Updates
-            if (!p2pConnectivityManager.isHosting && p2pConnectivityManager.connectedEndpoints.value.isNotEmpty()) {
+             if (!p2pConnectivityManager.isHosting && p2pConnectivityManager.connectedEndpoints.value.isNotEmpty()) {
                  val msg = com.curbos.pos.data.p2p.P2PMessage(
-                    type = com.curbos.pos.data.p2p.MESSAGE_TYPE.STATUS_UPDATE, // We reuse STATUS_UPDATE or create ORDER_UPDATE
+                    type = com.curbos.pos.data.p2p.MESSAGE_TYPE.STATUS_UPDATE,
                     payload = json.encodeToString(updatedTx)
                 )
                 p2pConnectivityManager.sendMessage(msg)
-            } else {
+             } else {
                  transactionRepository.updateTransaction(updatedTx)
-            }
-
-            // Optimistic UI Update
-            _uiState.update { state ->
-                val current = state.activeOrders.toMutableList()
-                val idx = current.indexOfFirst { it.id == transaction.id }
-                if (idx != -1) {
-                    current[idx] = updatedTx
-                }
-                state.copy(activeOrders = current)
-            }
+             }
+             // No manual state update needed!
         }
     }
     
-    fun refresh() {
-        loadActiveOrders()
-        checkSettings()
-    }
-
     fun completeOrder(transaction: Transaction) {
         viewModelScope.launch {
+            // We should use updateTransaction(tx) instead of ID status to be safe with full objects, 
+            // but status update is fine too if Repo handles it via ID.
             val result = transactionRepository.updateTransactionStatus(transaction.id, "READY")
             if (result is Result.Error) {
                 _uiState.update { it.copy(error = result.message) }

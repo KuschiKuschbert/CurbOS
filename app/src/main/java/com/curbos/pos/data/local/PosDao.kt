@@ -78,6 +78,9 @@ interface PosDao {
     @Query("SELECT * FROM transactions WHERE isSynced = 0")
     suspend fun getUnsyncedTransactions(): List<Transaction>
 
+    @Query("SELECT * FROM transactions WHERE fulfillmentStatus != 'COMPLETED' ORDER BY timestamp ASC")
+    fun getActiveTransactions(): Flow<List<Transaction>>
+
     // CRITICAL: Must count from 'offline_transactions' (the queue), NOT the main 'transactions' table.
     // The main table items are marked synced/unsynced but the queue is the source of truth for "Pending Uploads".
     @Query("SELECT count(*) FROM offline_transactions")

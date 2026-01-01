@@ -34,7 +34,15 @@ class TransactionSyncManager @javax.inject.Inject constructor(
     suspend fun stageTransaction(transaction: Transaction) {
         try {
             com.curbos.pos.common.Logger.d("TransactionSyncManager", "Staging transaction ${transaction.id}")
-            // 1. Store locally for safety
+            // 1. Store locally for safety (AND visibility in UI)
+             // INSERT INTO MAIN TABLE (Instant UI Update)
+            try {
+                posDao.insertTransaction(transaction)
+            } catch (e: Exception) {
+                com.curbos.pos.common.Logger.e("TransactionSyncManager", "Failed to insert local transaction: ${e.message}")
+            }
+
+            // 2. Queue for Sync
             val jsonString = json.encodeToString(transaction)
             val offlineTx = OfflineTransaction(transactionJson = jsonString)
             posDao.insertOfflineTransaction(offlineTx)
@@ -59,7 +67,15 @@ class TransactionSyncManager @javax.inject.Inject constructor(
     suspend fun stageTransactionUpdate(transaction: Transaction) {
         try {
             com.curbos.pos.common.Logger.d("TransactionSyncManager", "Staging update for ${transaction.id}")
-            // 1. Store locally for safety (Offline Queue)
+            
+            // 1. Update Local UI immediately
+             try {
+                posDao.updateTransaction(transaction) // or insertTransaction (upsert)
+            } catch (e: Exception) {
+                com.curbos.pos.common.Logger.e("TransactionSyncManager", "Failed to update local transaction: ${e.message}")
+            }
+
+            // 2. Store locally for safety (Offline Queue)
             val jsonString = json.encodeToString(transaction)
             val offlineTx = OfflineTransaction(transactionJson = jsonString)
             posDao.insertOfflineTransaction(offlineTx)

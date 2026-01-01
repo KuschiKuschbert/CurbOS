@@ -453,7 +453,7 @@ class SalesViewModel @javax.inject.Inject constructor(
                 milesRedeemed = currentState.milesRedeemed
             )
 
-            posDao.insertTransaction(transaction)
+            // posDao.insertTransaction(transaction) -- Redundant, handled by Repository now.
 
             // 1. Send to Repository and wait for Sync result
             com.curbos.pos.common.Logger.d("SalesViewModel", "Creating transaction ${transaction.id}...")
