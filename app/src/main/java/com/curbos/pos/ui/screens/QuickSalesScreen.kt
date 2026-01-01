@@ -48,6 +48,8 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.ui.graphics.asImageBitmap
 import com.curbos.pos.data.model.MenuItem
