@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RestaurantMenu
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.ripple.rememberRipple
@@ -914,12 +915,29 @@ fun CartContent(
                     Spacer(modifier = Modifier.width(8.dp))
                     
                     Button(
+                        onClick = { viewModel.toggleLoyaltyDialog(true, 1) },
+                        modifier = Modifier.weight(0.15f),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Search, 
+                            contentDescription = "Database", 
+                            tint = ElectricLime,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+                    
+                    Button(
                         onClick = { onScanClick() },
-                        modifier = Modifier.weight(0.3f),
+                        modifier = Modifier.weight(0.20f),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                         border = BorderStroke(1.dp, ElectricLime),
                         shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(4.dp)
+                        contentPadding = PaddingValues(0.dp)
                     ) {
                         Icon(
                             Icons.Filled.QrCodeScanner, 
@@ -1232,8 +1250,9 @@ fun LoyaltySearchDialog(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var phoneInput by remember { mutableStateOf("") }
-    var selectedTab by remember { mutableIntStateOf(0) }
     var searchQuery by remember { mutableStateOf("") }
+    
+    val selectedTab = uiState.loyaltyDialogTab
     
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -1256,10 +1275,10 @@ fun LoyaltySearchDialog(
                         )
                     }
                 ) {
-                    Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) {
+                    Tab(selected = selectedTab == 0, onClick = { viewModel.toggleLoyaltyDialog(true, 0) }) {
                         Text("Search Phone", modifier = Modifier.padding(16.dp), color = if (selectedTab == 0) ElectricLime else Color.Gray)
                     }
-                    Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
+                    Tab(selected = selectedTab == 1, onClick = { viewModel.toggleLoyaltyDialog(true, 1) }) {
                         Text("All Customers", modifier = Modifier.padding(16.dp), color = if (selectedTab == 1) ElectricLime else Color.Gray)
                     }
                 }

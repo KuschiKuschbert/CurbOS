@@ -21,5 +21,7 @@ data class Customer(
     @SerialName("redeemable_miles")
     val redeemableMiles: Double = 0.0,
     @SerialName("current_rank")
-    val currentRank: String = "Street Rookie"
+    val currentRank: String = "Street Rookie",
+    @SerialName("zip_code")
+    val zipCode: String? = null
 )

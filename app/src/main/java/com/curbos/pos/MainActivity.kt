@@ -38,6 +38,7 @@ import com.curbos.pos.ui.screens.AdminScreen
 import com.curbos.pos.ui.screens.MenuManagementScreen
 import com.curbos.pos.ui.screens.QuickSalesScreen
 import com.curbos.pos.ui.screens.SplashScreen
+import com.curbos.pos.ui.screens.CustomerDirectoryScreen
 import com.curbos.pos.ui.theme.CurbOSTheme
 import kotlinx.coroutines.launch
 import com.curbos.pos.data.prefs.ProfileManager
@@ -547,8 +548,19 @@ class MainActivity : AppCompatActivity() {
                                  },
                                  onNavigateToModifiers = {
                                      navController.navigate("admin_modifiers") { launchSingleTop = true }
+                                 },
+                                 onNavigateToCustomers = {
+                                     navController.navigate("admin_customers") { launchSingleTop = true }
                                  }
                              )
+                        }
+
+                        composable("admin_customers") {
+                            val salesViewModel: SalesViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+                            CustomerDirectoryScreen(
+                                viewModel = salesViewModel,
+                                onBack = { navController.popBackStack() }
+                            )
                         }
 
                         composable("admin_menu_catalog") {

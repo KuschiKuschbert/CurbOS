@@ -40,6 +40,7 @@ data class SalesUiState(
     val selectedCustomer: Customer? = null,
     val loyaltyRewards: List<LoyaltyReward> = emptyList(),
     val isLoyaltyDialogVisible: Boolean = false,
+    val loyaltyDialogTab: Int = 0,
     val isScannerVisible: Boolean = false,
     val milesRedeemed: Double = 0.0,
     val allCustomers: List<Customer> = emptyList()
@@ -215,6 +216,11 @@ class SalesViewModel @javax.inject.Inject constructor(
         }
     }
 
+    fun toggleLoyaltyDialog(visible: Boolean, tab: Int = 0) {
+        _uiState.update { it.copy(isLoyaltyDialogVisible = visible, loyaltyDialogTab = tab) }
+        if (visible) syncAllCustomers()
+    }
+
     // Loyalty Functions
     fun searchCustomer(phone: String) {
         viewModelScope.launch {
@@ -244,7 +250,10 @@ class SalesViewModel @javax.inject.Inject constructor(
     }
 
     fun attachCustomer(customer: Customer) {
-        _uiState.update { it.copy(selectedCustomer = customer, customerName = "") }
+        _uiState.update { it.copy(
+            selectedCustomer = customer, 
+            customerName = customer.fullName ?: it.customerName 
+        ) }
         // Fetch Rewards
         viewModelScope.launch {
             transactionRepository.syncRewards()

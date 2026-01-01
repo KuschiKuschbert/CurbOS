@@ -44,7 +44,8 @@ fun AdminScreen(
     csvExportManager: CsvExportManager? = null,
     onLaunchP2PSetup: () -> Unit = {},
     onNavigateToMenuCatalog: () -> Unit = {},
-    onNavigateToModifiers: () -> Unit = {}
+    onNavigateToModifiers: () -> Unit = {},
+    onNavigateToCustomers: () -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
@@ -85,7 +86,8 @@ fun AdminScreen(
                 onSync = { viewModel.syncMenu() },
                 onPushOrders = { viewModel.forceSyncOrders() },
                 onExportCsv = { scope.launch { csvExportManager?.exportDailySales() } },
-                onP2P = onLaunchP2PSetup
+                onP2P = onLaunchP2PSetup,
+                onCustomers = onNavigateToCustomers
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -234,7 +236,8 @@ fun ActionGrid(
     onSync: () -> Unit,
     onPushOrders: () -> Unit,
     onExportCsv: () -> Unit,
-    onP2P: () -> Unit
+    onP2P: () -> Unit,
+    onCustomers: () -> Unit
 ) {
     // 2-Column Grid Layout manual implementation for scroll compatibility
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -289,6 +292,17 @@ fun ActionGrid(
                  onClick = onP2P, 
                  modifier = Modifier.weight(1f)
              )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+             ActionCard(
+                 title = "Customers", 
+                 icon = Icons.Rounded.People, 
+                 color = MaterialTheme.colorScheme.primaryContainer, 
+                 textColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                 onClick = onCustomers, 
+                 modifier = Modifier.weight(1f)
+             )
+             Spacer(modifier = Modifier.weight(1f))
         }
     }
 }
