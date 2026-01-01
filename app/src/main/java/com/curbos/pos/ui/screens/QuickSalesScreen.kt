@@ -1335,6 +1335,7 @@ fun LoyaltyRewardsDialog(
     onRedeem: (LoyaltyReward) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(16.dp),
@@ -1478,30 +1479,34 @@ fun QRScannerDialog(
 
 @Composable
 fun RewardItemRow(reward: LoyaltyReward, canAfford: Boolean, onRedeem: () -> Unit) {
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = if (canAfford) Color.White.copy(alpha=0.1f) else Color.White.copy(alpha=0.02f)),
-                            modifier = Modifier.fillMaxWidth().alpha(if (canAfford) 1f else 0.5f)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(reward.description, color = Color.White, fontWeight = FontWeight.Bold)
-                                    Text("${reward.costMiles} Miles", color = ElectricLime)
-                                }
-                                Button(
-                                    onClick = { onRedeem(reward) },
-                                    enabled = canAfford,
-                                    colors = ButtonDefaults.buttonColors(containerColor = ElectricLime, disabledContainerColor = Color.DarkGray)
-                                ) {
-                                    Text("Redeem", color = if (canAfford) Color.Black else Color.Gray)
-                                }
-                            }
-                        }
-                    }
-                }
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = if (canAfford) Color.White.copy(alpha = 0.1f) else Color.White.copy(alpha = 0.02f)
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .alpha(if (canAfford) 1f else 0.5f)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(reward.description, color = Color.White, fontWeight = FontWeight.Bold)
+                Text("${reward.costMiles} Miles", color = ElectricLime)
+            }
+            Button(
+                onClick = onRedeem,
+                enabled = canAfford,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = ElectricLime,
+                    disabledContainerColor = Color.DarkGray
+                )
+            ) {
+                Text("Redeem", color = if (canAfford) Color.Black else Color.Gray)
             }
         }
     }
