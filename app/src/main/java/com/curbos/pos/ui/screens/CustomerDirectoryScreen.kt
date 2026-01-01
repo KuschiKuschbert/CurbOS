@@ -10,6 +10,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,7 +26,8 @@ import com.curbos.pos.ui.viewmodel.SalesViewModel
 @Composable
 fun CustomerDirectoryScreen(
     viewModel: SalesViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onExport: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
@@ -44,6 +46,9 @@ fun CustomerDirectoryScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onExport) {
+                        Icon(Icons.Default.Share, contentDescription = "Export", tint = ElectricLime)
+                    }
                     IconButton(onClick = { viewModel.syncAllCustomers() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Sync", tint = ElectricLime)
                     }

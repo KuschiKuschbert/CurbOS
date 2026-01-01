@@ -101,7 +101,52 @@ class CsvExportManager(
         }
     }
 
-    private fun shareCsvFile(file: File) {
+    suspend fun exportCustomers() {
+        withContext(Dispatchers.IO) {
+            try {
+                val customers = posDao.getCustomerList()
+                if (customers.isEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "No customers in database to export.", Toast.LENGTH_SHORT).show()
+                    }
+                    return@withContext
+                }
+
+                val csvHeader = "ID,Full Name,Phone Number,Email,ZIP Code,Lifetime Miles,Redeemable Miles,Rank\n"
+                val stringBuilder = StringBuilder(csvHeader)
+
+                customers.forEach { customer ->
+                    val line = listOf(
+                        customer.id,
+                        customer.fullName ?: "N/A",
+                        customer.phoneNumber,
+                        customer.email ?: "N/A",
+                        customer.zipCode ?: "N/A",
+                        "%.2f".format(customer.lifetimeMiles),
+                        "%.2f".format(customer.redeemableMiles),
+                        customer.currentRank
+                    ).joinToString(",")
+                    stringBuilder.append(line).append("\n")
+                }
+
+                val fileName = "Customer_Database_${SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())}.csv"
+                val file = File(context.cacheDir, fileName)
+                
+                FileWriter(file).use { it.write(stringBuilder.toString()) }
+                
+                withContext(Dispatchers.Main) {
+                    shareCsvFile(file, "Export Customer Database CSV")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Export Failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    private fun shareCsvFile(file: File, title: String = "Export CSV") {
         try {
             val uri: Uri = FileProvider.getUriForFile(
                 context,
@@ -111,12 +156,12 @@ class CsvExportManager(
 
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "text/csv"
-                putExtra(Intent.EXTRA_SUBJECT, "CurbOS Daily Sales Report")
+                putExtra(Intent.EXTRA_SUBJECT, "CurbOS Database Export")
                 putExtra(Intent.EXTRA_STREAM, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
 
-            val chooser = Intent.createChooser(intent, "Export Daily Sales CSV")
+            val chooser = Intent.createChooser(intent, title)
             chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(chooser)
         } catch (e: Exception) {

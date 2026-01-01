@@ -557,9 +557,15 @@ class MainActivity : AppCompatActivity() {
 
                         composable("admin_customers") {
                             val salesViewModel: SalesViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+                            val coroutineScope = rememberCoroutineScope()
                             CustomerDirectoryScreen(
                                 viewModel = salesViewModel,
-                                onBack = { navController.popBackStack() }
+                                onBack = { navController.popBackStack() },
+                                onExport = {
+                                    coroutineScope.launch {
+                                        csvExportManager.exportCustomers()
+                                    }
+                                }
                             )
                         }
 
