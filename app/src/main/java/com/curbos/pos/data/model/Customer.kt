@@ -23,5 +23,7 @@ data class Customer(
     @SerialName("current_rank")
     val currentRank: String = "Street Rookie",
     @SerialName("zip_code")
-    val zipCode: String? = null
+    val zipCode: String? = null,
+    @SerialName("unlocked_regions")
+    val unlockedRegions: List<String> = emptyList()
 )

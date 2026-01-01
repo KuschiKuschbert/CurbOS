@@ -12,5 +12,9 @@ data class LoyaltyReward(
     val id: String,
     val description: String,
     @SerialName("cost_miles")
-    val costMiles: Int
+    val costMiles: Int,
+    @SerialName("discount_amount")
+    val discountAmount: Double = 0.0,
+    @SerialName("is_auto_applied")
+    val isAutoApplied: Boolean = true
 )

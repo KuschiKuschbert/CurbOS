@@ -18,6 +18,8 @@ data class MenuItem(
     val taxRate: Double = 0.1, // Default GST 10%
     @kotlinx.serialization.SerialName("is_available")
     val isAvailable: Boolean = true,
+    @kotlinx.serialization.SerialName("region")
+    val region: String? = null,
     @kotlinx.serialization.SerialName("updated_at")
     val updatedAt: String? = null
 )

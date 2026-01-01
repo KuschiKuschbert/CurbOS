@@ -8,6 +8,7 @@ import com.curbos.pos.data.model.Transaction
 import com.curbos.pos.data.model.Customer
 import com.curbos.pos.data.model.LoyaltyReward
 import com.curbos.pos.data.local.PosDao
+import com.curbos.pos.data.model.LoyaltyConstants
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -313,21 +314,15 @@ class SalesViewModel @javax.inject.Inject constructor(
         val currentState = _uiState.value
         val customer = currentState.selectedCustomer ?: return
         
+        // 1. Check if customer has enough miles
         if (customer.redeemableMiles < (currentState.milesRedeemed + reward.costMiles)) {
              reportError("Not enough miles!")
              return
         }
         
-        // Define Discount Amounts (Hardcoded Logic mapping to DB Reward descriptions)
-        // Ideally DB has amount column, but per plan description is text.
-        val discountValue = when {
-            reward.description.contains("Free Drink", true) -> 3.50
-            reward.description.contains("Free Taco", true) -> 5.00
-            else -> 0.0 // Merch etc might be handled differently
-        }
-        
-        if (discountValue > 0) {
-            val newDiscount = currentState.discountAmount + discountValue
+        // 2. Handle Auto-Applied (Discount) Rewards
+        if (reward.isAutoApplied && reward.discountAmount > 0) {
+            val newDiscount = currentState.discountAmount + reward.discountAmount
             val subtotal = currentState.cartItems.sumOf { it.totalPrice }
              
              _uiState.update { 
@@ -339,10 +334,22 @@ class SalesViewModel @javax.inject.Inject constructor(
              }
 
              viewModelScope.launch {
-                 com.curbos.pos.common.SnackbarManager.showSuccess("Redeemed: ${reward.description}")
+                 com.curbos.pos.common.SnackbarManager.showSuccess("Applied: ${reward.description} (-$${"%.2f".format(reward.discountAmount)})")
+             }
+        } else if (!reward.isAutoApplied) {
+            // 3. Handle Manual Rewards (Merch, etc.)
+            // We just deduct the points but don't apply a dollar discount to the cart.
+             _uiState.update { 
+                 it.copy(
+                     milesRedeemed = it.milesRedeemed + reward.costMiles,
+                     isLoyaltyDialogVisible = false
+                 )
+             }
+             viewModelScope.launch {
+                 com.curbos.pos.common.SnackbarManager.showSuccess("Redeemed: ${reward.description} (Collect from Counter)")
              }
         } else {
-             reportError("This reward cannot be auto-applied yet.")
+             reportError("This reward has no defined discount amount.")
         }
     }
     
@@ -450,15 +457,25 @@ class SalesViewModel @javax.inject.Inject constructor(
                         val redeemed = currentState.milesRedeemed
                         
                         // Calculate new values
+                        // Calculate new values
                         val newLifetime = customer.lifetimeMiles + earned
                         // Redeemable: Old - Redeemed + Earned
                         val newRedeemable = customer.redeemableMiles - redeemed + earned
                         
+                        // Calculate Rank
+                        val newRank = LoyaltyConstants.TacoRank.fromMiles(newLifetime).rankName
+                        
+                        // Unlock Regions
+                        val regionsInOrder = currentState.cartItems.mapNotNull { it.menuItem.region }.distinct()
+                        val newUnlockedRegions = (customer.unlockedRegions + regionsInOrder).distinct()
+                        
                         val updatedCustomer = customer.copy(
                             lifetimeMiles = newLifetime,
-                            redeemableMiles = newRedeemable
+                            redeemableMiles = newRedeemable,
+                            currentRank = newRank,
+                            unlockedRegions = newUnlockedRegions
                         )
-                        com.curbos.pos.common.Logger.d("SalesViewModel", "Updating Customer Points: +$earned, -$redeemed")
+                        com.curbos.pos.common.Logger.d("SalesViewModel", "Updating Customer: Rank=$newRank, Regions=$newUnlockedRegions")
                         launchCatching {
                             transactionRepository.createOrUpdateCustomer(updatedCustomer)
                         }

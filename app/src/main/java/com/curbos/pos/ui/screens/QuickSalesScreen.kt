@@ -44,6 +44,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -62,7 +63,12 @@ import com.curbos.pos.data.model.CartItem
 import com.curbos.pos.data.model.Customer
 import com.curbos.pos.data.model.LoyaltyReward
 import com.curbos.pos.data.model.MenuItem
+import com.curbos.pos.data.model.LoyaltyConstants
 import com.curbos.pos.data.model.ModifierOption
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.CardGiftcard
 import com.curbos.pos.ui.components.PulsatingBackground
 import com.curbos.pos.ui.theme.ElectricLime
 import com.curbos.pos.ui.theme.IceCreamCone
@@ -1009,7 +1015,8 @@ fun CartContent(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Discount (${appliedPromoCode ?: ""}):", style = MaterialTheme.typography.bodySmall, color = ElectricLime)
+                            val promoLabel = if (appliedPromoCode != null) "Promo ($appliedPromoCode)" else "Loyalty Discount"
+                            Text("$promoLabel:", style = MaterialTheme.typography.bodySmall, color = ElectricLime)
                             Text("-$%.2f".format(discountAmount), style = MaterialTheme.typography.bodySmall, color = ElectricLime)
                         }
                     } else {
@@ -1394,22 +1401,59 @@ fun LoyaltyRewardsDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    var selectedTab by remember { mutableStateOf(0) }
+
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = Color(0xFF1E1E1E),
-            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.8f)
+            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.9f)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                    Text("Rewards", style = MaterialTheme.typography.headlineSmall, color = Color.White)
+                    Text("Taco Passport", style = MaterialTheme.typography.headlineSmall, color = Color.White)
                     IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, null, tint = Color.Gray) }
                 }
                 
-                // Header
+                // Tabs
+                TabRow(
+                    selectedTabIndex = selectedTab,
+                    containerColor = Color.Transparent,
+                    contentColor = ElectricLime,
+                    divider = {},
+                    indicator = { tabPositions ->
+                        TabRowDefaults.SecondaryIndicator(
+                            Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                            color = ElectricLime
+                        )
+                    }
+                ) {
+                    Tab(
+                         selected = selectedTab == 0,
+                         onClick = { selectedTab = 0 },
+                         text = { Row(verticalAlignment = Alignment.CenterVertically) {
+                             Icon(Icons.Default.CardGiftcard, null, modifier = Modifier.size(16.dp))
+                             Spacer(modifier = Modifier.width(8.dp))
+                             Text("Rewards")
+                         }}
+                    )
+                    Tab(
+                         selected = selectedTab == 1,
+                         onClick = { selectedTab = 1 },
+                         text = { Row(verticalAlignment = Alignment.CenterVertically) {
+                             Icon(Icons.Default.Map, null, modifier = Modifier.size(16.dp))
+                             Spacer(modifier = Modifier.width(8.dp))
+                             Text("Passport")
+                         }}
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Header (Common)
                 Card(
                      colors = CardDefaults.cardColors(containerColor = ElectricLime.copy(alpha = 0.1f)),
-                     modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)
+                     modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -1426,20 +1470,106 @@ fun LoyaltyRewardsDialog(
                             ) {
                                 Icon(Icons.Default.Share, null, tint = ElectricLime, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Share Card", color = ElectricLime)
+                                Text("Share", color = ElectricLime)
                             }
                         }
                     }
                 }
                 
-                Text("Available Rewards", color = Color.Gray, modifier = Modifier.padding(bottom = 8.dp))
-                
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(rewards.sortedBy { it.costMiles }) { reward ->
-                        val canAfford = customer.redeemableMiles >= reward.costMiles
-                        RewardItemRow(reward = reward, canAfford = canAfford, onRedeem = { onRedeem(reward) })
-                    }
+                if (selectedTab == 0) {
+                     // Rewards Content
+                     Text("Available Rewards", color = Color.Gray, modifier = Modifier.padding(bottom = 8.dp))
+                     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(rewards.sortedBy { it.costMiles }) { reward ->
+                            val canAfford = customer.redeemableMiles >= reward.costMiles
+                            RewardItemRow(reward = reward, canAfford = canAfford, onRedeem = { onRedeem(reward) })
+                        }
+                     }
+                } else {
+                    // Passport Content
+                    PassportContent(customer = customer)
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun PassportContent(customer: Customer) {
+    val currentRank = LoyaltyConstants.TacoRank.values().find { it.rankName == customer.currentRank } ?: LoyaltyConstants.TacoRank.STREET_ROOKIE
+    val nextRank = LoyaltyConstants.TacoRank.values().firstOrNull { it.minMiles > currentRank.minMiles }
+    
+    val currentLifetime = customer.lifetimeMiles
+    
+    val progress = if (nextRank != null) {
+        val totalRange = nextRank.minMiles - currentRank.minMiles
+        val currentProgress = currentLifetime - currentRank.minMiles
+        (currentProgress.toFloat() / totalRange.toFloat()).coerceIn(0f, 1f)
+    } else {
+        1f
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Rank Progress
+        Text("Rank Progress", color = ElectricLime, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+        
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier.fillMaxWidth().height(12.dp).clip(RoundedCornerShape(6.dp)),
+            color = ElectricLime,
+            trackColor = Color.DarkGray
+        )
+        
+        Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+             Text(currentRank.rankName, color = Color.White, style = MaterialTheme.typography.bodySmall)
+             if (nextRank != null) {
+                 Text("${(nextRank.minMiles - currentLifetime).toInt()} to ${nextRank.rankName}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+             } else {
+                 Text("Max Rank!", color = SafetyOrange, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+             }
+        }
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Regions Grid
+        Text("Region Unlocks", color = ElectricLime, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
+        
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(LoyaltyConstants.TacoRegion.ALL_REGIONS) { region ->
+                val isUnlocked = customer.unlockedRegions.contains(region)
+                RegionStampCard(regionName = region, isUnlocked = isUnlocked)
+            }
+        }
+    }
+}
+
+@Composable
+fun RegionStampCard(regionName: String, isUnlocked: Boolean) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = if (isUnlocked) ElectricLime else Color.DarkGray.copy(alpha = 0.3f)
+        ),
+        modifier = Modifier.aspectRatio(1f).alpha(if (isUnlocked) 1f else 0.5f)
+    ) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    if (isUnlocked) Icons.Default.Star else Icons.Default.Lock,
+                    contentDescription = null,
+                    tint = if (isUnlocked) Color.Black else Color.Gray,
+                    modifier = Modifier.size(32.dp).padding(bottom = 8.dp)
+                )
+                Text(
+                    regionName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isUnlocked) Color.Black else Color.Gray,
+                    fontWeight = if (isUnlocked) FontWeight.Bold else FontWeight.Normal,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
             }
         }
     }
@@ -1555,7 +1685,12 @@ fun RewardItemRow(reward: LoyaltyReward, canAfford: Boolean, onRedeem: () -> Uni
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(reward.description, color = Color.White, fontWeight = FontWeight.Bold)
-                Text("${reward.costMiles} Miles", color = ElectricLime)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("${reward.costMiles} Miles", color = ElectricLime, style = MaterialTheme.typography.bodySmall)
+                    if (reward.discountAmount > 0) {
+                        Text(" • $%.2f Value".format(reward.discountAmount), color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+                    }
+                }
             }
             Button(
                 onClick = onRedeem,

@@ -10,7 +10,7 @@ import com.curbos.pos.data.model.Customer
 import com.curbos.pos.data.model.LoyaltyReward
 import com.curbos.pos.data.model.OfflineCustomerUpdate
 
-@Database(entities = [MenuItem::class, Transaction::class, ModifierOption::class, OfflineTransaction::class, Customer::class, LoyaltyReward::class, OfflineCustomerUpdate::class], version = 8, exportSchema = true)
+@Database(entities = [MenuItem::class, Transaction::class, ModifierOption::class, OfflineTransaction::class, Customer::class, LoyaltyReward::class, OfflineCustomerUpdate::class], version = 10, exportSchema = true)
 @androidx.room.TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun posDao(): PosDao

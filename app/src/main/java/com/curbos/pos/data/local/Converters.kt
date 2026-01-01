@@ -17,4 +17,14 @@ class Converters {
     fun toTransactionItemList(value: String): List<TransactionItem> {
         return json.decodeFromString(value)
     }
+
+    @TypeConverter
+    fun fromStringList(value: List<String>): String {
+        return json.encodeToString(value)
+    }
+
+    @TypeConverter
+    fun toStringList(value: String): List<String> {
+        return json.decodeFromString(value)
+    }
 }
