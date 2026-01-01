@@ -84,7 +84,7 @@ class KitchenViewModelTest {
         )
         
         // Mock update success
-        coEvery { transactionRepository.updateTransaction(any()) } returns com.curbos.pos.common.Result.Success(Unit)
+        coEvery { transactionRepository.updateTransactionStatus(any(), any()) } returns com.curbos.pos.common.Result.Success(Unit)
 
         // Trigger bump
         viewModel.bumpOrder(transaction)
@@ -92,6 +92,6 @@ class KitchenViewModelTest {
         advanceUntilIdle()
         
         // Verify Repository called
-        coVerify { transactionRepository.updateTransaction(any()) }
+        coVerify { transactionRepository.updateTransactionStatus(any(), any()) }
     }
 }

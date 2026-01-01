@@ -8,6 +8,8 @@ import androidx.room.Update
 import com.curbos.pos.data.model.MenuItem
 import com.curbos.pos.data.model.ModifierOption
 import com.curbos.pos.data.model.Transaction
+import com.curbos.pos.data.model.Customer
+import com.curbos.pos.data.model.LoyaltyReward
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -97,4 +99,21 @@ interface PosDao {
 
     @Query("SELECT MAX(orderNumber) FROM transactions WHERE timestamp >= :startOfDay")
     suspend fun getTodayMaxOrderNumber(startOfDay: Long): Int?
+
+    // Customers
+    @Query("SELECT * FROM customers WHERE phoneNumber = :phone")
+    suspend fun getCustomerByPhone(phone: String): Customer?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCustomer(customer: Customer)
+
+    @Update
+    suspend fun updateCustomer(customer: Customer)
+
+    // Loyalty Rewards
+    @Query("SELECT * FROM loyalty_rewards")
+    fun getAllLoyaltyRewards(): Flow<List<LoyaltyReward>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLoyaltyRewards(rewards: List<LoyaltyReward>)
 }

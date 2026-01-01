@@ -4,6 +4,9 @@ import com.curbos.pos.data.model.Transaction
 import com.curbos.pos.data.remote.SupabaseManager
 import com.curbos.pos.data.TransactionSyncManager
 import com.curbos.pos.common.Result
+import com.curbos.pos.data.model.Customer
+import com.curbos.pos.data.model.LoyaltyReward
+import com.curbos.pos.data.local.PosDao
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
@@ -19,6 +22,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 
 class TransactionRepositoryImpl @Inject constructor(
     private val transactionSyncManager: TransactionSyncManager,
+    private val posDao: PosDao,
     @ApplicationContext private val context: Context,
     @com.curbos.pos.di.ApplicationScope private val externalScope: kotlinx.coroutines.CoroutineScope
 ) : TransactionRepository {
@@ -119,5 +123,45 @@ class TransactionRepositoryImpl @Inject constructor(
 
     override suspend fun subscribeToReadyNotifications(onReady: (Transaction) -> Unit) {
         SupabaseManager.subscribeToReadyNotifications(onReady)
+    }
+
+    // Loyalty Implementation
+    override suspend fun getCustomerByPhone(phone: String): Result<Customer?> {
+        // 1. Try Local
+        val local = posDao.getCustomerByPhone(phone)
+        if (local != null) return Result.Success(local)
+
+        // 2. Try Remote
+        val remoteResult = SupabaseManager.fetchCustomer(phone)
+        if (remoteResult is Result.Success && remoteResult.data != null) {
+            posDao.insertCustomer(remoteResult.data)
+            return Result.Success(remoteResult.data)
+        }
+
+        return remoteResult
+    }
+
+    override suspend fun createOrUpdateCustomer(customer: Customer): Result<Customer> {
+        // Optimistic Local Update
+        posDao.insertCustomer(customer)
+        
+        // Remote Update
+        val result = SupabaseManager.upsertCustomer(customer)
+        if (result is Result.Success) {
+            // Update local with server response (e.g. updated miles/rank if db triggers ran)
+            posDao.insertCustomer(result.data)
+        }
+        return result
+    }
+
+    override fun getLoyaltyRewards(): Flow<List<LoyaltyReward>> {
+        return posDao.getAllLoyaltyRewards()
+    }
+
+    override suspend fun syncRewards() {
+        val result = SupabaseManager.fetchRewards()
+        if (result is Result.Success) {
+            posDao.insertLoyaltyRewards(result.data)
+        }
     }
 }

@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.curbos.pos.data.model.MenuItem
 import com.curbos.pos.data.model.CartItem
 import com.curbos.pos.data.model.Transaction
+import com.curbos.pos.data.model.Customer
+import com.curbos.pos.data.model.LoyaltyReward
 import com.curbos.pos.data.local.PosDao
 
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,7 +31,16 @@ data class SalesUiState(
     val lastTransactionId: String? = null,
     val unsyncedCount: Int = 0,
     val webBaseUrl: String = "https://prepflow.org",
-    val recentTransactions: List<Transaction> = emptyList()
+
+    val recentTransactions: List<Transaction> = emptyList(),
+    val discountAmount: Double = 0.0,
+    val appliedPromoCode: String? = null,
+    
+    // Loyalty State
+    val selectedCustomer: Customer? = null,
+    val loyaltyRewards: List<LoyaltyReward> = emptyList(),
+    val isLoyaltyDialogVisible: Boolean = false,
+    val milesRedeemed: Double = 0.0
 )
 
 @dagger.hilt.android.lifecycle.HiltViewModel
@@ -141,9 +152,154 @@ class SalesViewModel @javax.inject.Inject constructor(
     fun clearCart() {
         _uiState.update { 
             broadcastCartUpdate(emptyList()) // Broadcast!
-            it.copy(cartItems = emptyList(), totalAmount = 0.0) 
+            it.copy(
+                cartItems = emptyList(), 
+                totalAmount = 0.0,
+                discountAmount = 0.0,
+                appliedPromoCode = null
+            ) 
         }
     }
+
+    fun applyPromoCode(code: String) {
+        val currentState = _uiState.value
+        val subtotal = currentState.cartItems.sumOf { it.totalPrice }
+        
+        // TODO: Replace with Database Lookup. Hardcoded for MVP/Testing.
+        var discount: Double
+        var validCode: String?
+        val cleanCode = code.uppercase().trim()
+
+        if (cleanCode == "SAVE10") {
+            discount = subtotal * 0.10
+            validCode = "SAVE10"
+        } else if (cleanCode == "WELCOME" && subtotal >= 20.0) {
+            discount = 5.0
+            validCode = "WELCOME"
+        } else if (cleanCode == "BURGERDAY" && subtotal >= 30.0) {
+            discount = subtotal * 0.15
+            validCode = "BURGERDAY"
+        } else if (cleanCode.isBlank()) {
+             // Clearing code
+             discount = 0.0
+             validCode = null
+        } else {
+             reportError("Invalid Code or Minimum Spend not met")
+             return
+        }
+
+        // Ensure discount doesn't exceed total
+        if (discount > subtotal) discount = subtotal
+
+        _uiState.update { 
+            it.copy(
+                discountAmount = discount,
+                appliedPromoCode = validCode,
+                totalAmount = subtotal - discount
+            )
+        }
+        
+        if (validCode != null) {
+            viewModelScope.launch {
+                com.curbos.pos.common.SnackbarManager.showSuccess("Code Applied: $validCode (-$${"%.2f".format(discount)})")
+            }
+        }
+    }
+
+    // Loyalty Functions
+    fun searchCustomer(phone: String) {
+        viewModelScope.launch {
+            when (val result = transactionRepository.getCustomerByPhone(phone)) {
+                is com.curbos.pos.common.Result.Success -> {
+                    if (result.data != null) {
+                        attachCustomer(result.data)
+                    } else {
+                        // User not found -> Propose to create? For MVP, auto-create a stub and attach
+                         val newCustomer = Customer(
+                             id = UUID.randomUUID().toString(),
+                             phoneNumber = phone,
+                             fullName = null,
+                             email = null
+                         )
+                         // Don't save yet, just attach. Save on checkout.
+                         attachCustomer(newCustomer)
+                         com.curbos.pos.common.SnackbarManager.showSuccess("New Customer Attached")
+                    }
+                }
+                is com.curbos.pos.common.Result.Error -> {
+                    reportError("Failed to find customer")
+                }
+                else -> {}
+            }
+        }
+    }
+
+    fun attachCustomer(customer: Customer) {
+        _uiState.update { it.copy(selectedCustomer = customer) }
+        // Fetch Rewards?
+        viewModelScope.launch {
+            transactionRepository.syncRewards()
+            transactionRepository.getLoyaltyRewards().collect { rewards ->
+                _uiState.update { it.copy(loyaltyRewards = rewards) }
+            }
+        }
+    }
+
+    fun detachCustomer() {
+        _uiState.update { 
+            it.copy(
+                selectedCustomer = null, 
+                milesRedeemed = 0.0,
+                discountAmount = 0.0 // Reset discount if removing customer? Maybe ask user. For now, reset.
+            ) 
+        }
+    }
+
+    fun redeemReward(reward: LoyaltyReward) {
+        val currentState = _uiState.value
+        val customer = currentState.selectedCustomer ?: return
+        
+        if (customer.redeemableMiles < (currentState.milesRedeemed + reward.costMiles)) {
+             reportError("Not enough miles!")
+             return
+        }
+        
+        // Define Discount Amounts (Hardcoded Logic mapping to DB Reward descriptions)
+        // Ideally DB has amount column, but per plan description is text.
+        val discountValue = when {
+            reward.description.contains("Free Drink", true) -> 3.50
+            reward.description.contains("Free Taco", true) -> 5.00
+            else -> 0.0 // Merch etc might be handled differently
+        }
+        
+        if (discountValue > 0) {
+            val newDiscount = currentState.discountAmount + discountValue
+            val subtotal = currentState.cartItems.sumOf { it.totalPrice }
+             
+             _uiState.update { 
+                 it.copy(
+                     discountAmount = minOf(newDiscount, subtotal),
+                     milesRedeemed = it.milesRedeemed + reward.costMiles,
+                     isLoyaltyDialogVisible = false
+                 )
+             }
+
+             viewModelScope.launch {
+                 com.curbos.pos.common.SnackbarManager.showSuccess("Redeemed: ${reward.description}")
+             }
+        } else {
+             reportError("This reward cannot be auto-applied yet.")
+        }
+    }
+    
+    fun showLoyaltyDialog() {
+        _uiState.update { it.copy(isLoyaltyDialogVisible = true) }
+    }
+    
+    fun hideLoyaltyDialog() {
+        _uiState.update { it.copy(isLoyaltyDialogVisible = false) }
+    }
+
 
     fun showPaymentDialog() {
         _uiState.update { it.copy(isPaymentDialogVisible = true) }
@@ -184,13 +340,19 @@ class SalesViewModel @javax.inject.Inject constructor(
                 id = java.util.UUID.randomUUID().toString(),
                 timestamp = System.currentTimeMillis(),
                 totalAmount = total,
+                discountAmount = currentState.discountAmount,
+                promoCode = currentState.appliedPromoCode,
                 taxAmount = total * 0.1,
                 items = transactionItems,
                 status = "COMPLETED",
                 paymentMethod = method,
                 fulfillmentStatus = "PENDING",
+
                 orderNumber = nextOrderNumber,
-                customerName = if (currentState.customerName.isNotBlank()) currentState.customerName else null
+                customerName = if (currentState.customerName.isNotBlank()) currentState.customerName else currentState.selectedCustomer?.fullName,
+                customerId = currentState.selectedCustomer?.id,
+                milesEarned = total, // 1 point per $1
+                milesRedeemed = currentState.milesRedeemed
             )
 
             posDao.insertTransaction(transaction)
@@ -211,8 +373,33 @@ class SalesViewModel @javax.inject.Inject constructor(
                             totalAmount = 0.0, 
                             isPaymentDialogVisible = false,
                             customerName = "",
-                            lastTransactionId = transaction.id
+                            lastTransactionId = transaction.id,
+                            
+                            // Reset Loyalty
+                            selectedCustomer = null,
+                            milesRedeemed = 0.0,
+                            discountAmount = 0.0
                         ) 
+                    }
+                    
+                    // Update Customer Loyalty Points
+                    currentState.selectedCustomer?.let { customer ->
+                        val earned = transaction.totalAmount 
+                        val redeemed = currentState.milesRedeemed
+                        
+                        // Calculate new values
+                        val newLifetime = customer.lifetimeMiles + earned
+                        // Redeemable: Old - Redeemed + Earned
+                        val newRedeemable = customer.redeemableMiles - redeemed + earned
+                        
+                        val updatedCustomer = customer.copy(
+                            lifetimeMiles = newLifetime,
+                            redeemableMiles = newRedeemable
+                        )
+                        com.curbos.pos.common.Logger.d("SalesViewModel", "Updating Customer Points: +$earned, -$redeemed")
+                        launchCatching {
+                            transactionRepository.createOrUpdateCustomer(updatedCustomer)
+                        }
                     }
                 }
                 is com.curbos.pos.common.Result.Error -> {

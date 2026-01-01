@@ -44,10 +44,13 @@ import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.ui.graphics.asImageBitmap
 import com.curbos.pos.data.model.MenuItem
 import com.curbos.pos.data.model.ModifierOption
 import com.curbos.pos.data.model.CartItem
+import com.curbos.pos.data.model.Customer
+import com.curbos.pos.data.model.LoyaltyReward
 import com.curbos.pos.ui.theme.ElectricLime
 import com.curbos.pos.ui.theme.SafetyOrange
 import com.curbos.pos.ui.viewmodel.SalesViewModel
@@ -261,26 +264,32 @@ fun QuickSalesScreen(
                             .padding(16.dp), // Inner padding
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        CartContent(
-                            cartItems = uiState.cartItems,
-                            totalAmount = uiState.totalAmount,
-                            customerName = uiState.customerName,
-                            onCustomerNameChange = { viewModel.updateCustomerName(it) },
-                            onRemoveItem = { viewModel.removeFromCart(it) },
-                            onPaymentSelected = { type -> 
-                                if (uiState.customerName.isBlank()) {
-                                    viewModel.reportError("Please enter a Customer Name / Table #")
-                                    return@CartContent
+                            CartContent(
+                                cartItems = uiState.cartItems,
+                                totalAmount = uiState.totalAmount,
+                                discountAmount = uiState.discountAmount,
+                                appliedPromoCode = uiState.appliedPromoCode,
+                                customerName = uiState.customerName,
+                                selectedCustomer = uiState.selectedCustomer,
+                                onCustomerNameChange = { viewModel.updateCustomerName(it) },
+                                onRemoveItem = { viewModel.removeFromCart(it) },
+                                onApplyPromoCode = { viewModel.applyPromoCode(it) },
+                                onAttachCustomerClick = { viewModel.showLoyaltyDialog() },
+                                onDetachCustomerClick = { viewModel.detachCustomer() },
+                                onPaymentSelected = { type -> 
+                                    if (uiState.customerName.isBlank() && uiState.selectedCustomer == null) {
+                                        viewModel.reportError("Please enter a Customer Name / Table #")
+                                        return@CartContent
+                                    }
+                                    if (type == "CARD") {
+                                        val surcharge = uiState.totalAmount * 0.022
+                                        val totalWithSurcharge = uiState.totalAmount + surcharge
+                                        val amountCents = (totalWithSurcharge * 100).toInt()
+                                        launchSquarePayment(amountCents)
+                                    }
+                                    else viewModel.processPayment(type)
                                 }
-                                if (type == "CARD") {
-                                    val surcharge = uiState.totalAmount * 0.022
-                                    val totalWithSurcharge = uiState.totalAmount + surcharge
-                                    val amountCents = (totalWithSurcharge * 100).toInt()
-                                    launchSquarePayment(amountCents)
-                                }
-                                else viewModel.processPayment(type)
-                            }
-                        )
+                            )
                     }
                 }
             } else {
@@ -342,11 +351,17 @@ fun QuickSalesScreen(
                                     CartContent(
                                         cartItems = uiState.cartItems,
                                         totalAmount = uiState.totalAmount,
+                                        discountAmount = uiState.discountAmount,
+                                        appliedPromoCode = uiState.appliedPromoCode,
                                         customerName = uiState.customerName,
+                                        selectedCustomer = uiState.selectedCustomer,
                                         onCustomerNameChange = { viewModel.updateCustomerName(it) },
                                         onRemoveItem = { viewModel.removeFromCart(it) },
+                                        onApplyPromoCode = { viewModel.applyPromoCode(it) },
+                                        onAttachCustomerClick = { viewModel.showLoyaltyDialog() },
+                                        onDetachCustomerClick = { viewModel.detachCustomer() },
                                         onPaymentSelected = { type -> 
-                                            if (uiState.customerName.isBlank()) {
+                                            if (uiState.customerName.isBlank() && uiState.selectedCustomer == null) {
                                                 viewModel.reportError("Please enter a Customer Name / Table #")
                                                 return@CartContent
                                             }
@@ -441,6 +456,23 @@ fun QuickSalesScreen(
                 selectedMenuItem = null
             }
         )
+    }
+
+    // Loyalty Dialogs
+    if (uiState.isLoyaltyDialogVisible) {
+        if (uiState.selectedCustomer == null) {
+            LoyaltySearchDialog(
+                onSearch = { phone -> viewModel.searchCustomer(phone) },
+                onDismiss = { viewModel.hideLoyaltyDialog() }
+            )
+        } else {
+            LoyaltyRewardsDialog(
+                customer = uiState.selectedCustomer!!,
+                rewards = uiState.loyaltyRewards,
+                onRedeem = { reward -> viewModel.redeemReward(reward) },
+                onDismiss = { viewModel.hideLoyaltyDialog() }
+            )
+        }
     }
 }
 
@@ -725,15 +757,79 @@ fun MenuContent(
 fun CartContent(
     cartItems: List<CartItem>,
     totalAmount: Double,
+    discountAmount: Double,
+    appliedPromoCode: String?,
     customerName: String,
+    selectedCustomer: Customer?,
     onCustomerNameChange: (String) -> Unit,
     onRemoveItem: (CartItem) -> Unit,
+    onApplyPromoCode: (String) -> Unit,
+    onAttachCustomerClick: () -> Unit,
+    onDetachCustomerClick: () -> Unit,
     onPaymentSelected: (String) -> Unit
 ) {
      val surcharge = totalAmount * 0.022
      val cardTotal = totalAmount + surcharge
+     var promoCodeInput by remember { mutableStateOf("") }
+     
+     // Update input if code is applied externally or cleared
+     LaunchedEffect(appliedPromoCode) {
+         if (appliedPromoCode == null) promoCodeInput = ""
+     }
 
      Column(modifier = Modifier.fillMaxSize()) {
+        // --- CUSTOMER / LOYALTY BAR ---
+        Box(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+            if (selectedCustomer != null) {
+                // Customer Attached View
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = ElectricLime.copy(alpha = 0.1f)),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth().clickable { onAttachCustomerClick() } // Click to open rewards
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(
+                                selectedCustomer.fullName ?: selectedCustomer.phoneNumber,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = ElectricLime,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                "${selectedCustomer.currentRank} • ${selectedCustomer.redeemableMiles.toInt()} Miles",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White
+                            )
+                        }
+                        IconButton(onClick = onDetachCustomerClick) {
+                            Icon(Icons.Default.Close, contentDescription = "Detach", tint = Color.Gray)
+                        }
+                    }
+                }
+            } else {
+                // Attach Button
+                Button(
+                    onClick = onAttachCustomerClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.PersonAdd, 
+                        contentDescription = null, 
+                        tint = ElectricLime,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Attach Customer / Loyalty", color = ElectricLime)
+                }
+            }
+        }
+        
         // Cart List
         LazyColumn(
             modifier = Modifier.weight(1f).testTag("cart_list"),
@@ -762,7 +858,51 @@ fun CartContent(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text("Subtotal:", style = MaterialTheme.typography.bodyLarge, color = Color.White)
-                Text("$%.2f".format(totalAmount), style = MaterialTheme.typography.bodyLarge, color = Color.White)
+                // If discount exists, subtotal is Total + Discount
+                val subtotalDisplay = if (discountAmount > 0) totalAmount + discountAmount else totalAmount
+                Text("$%.2f".format(subtotalDisplay), style = MaterialTheme.typography.bodyLarge, color = Color.White)
+            }
+            
+            if (discountAmount > 0) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Discount (${appliedPromoCode ?: ""}):", style = MaterialTheme.typography.bodyLarge, color = ElectricLime)
+                    Text("-$%.2f".format(discountAmount), style = MaterialTheme.typography.bodyLarge, color = ElectricLime)
+                }
+            } else {
+                 Spacer(modifier = Modifier.height(8.dp))
+                 // Promo Code Input
+                 Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = promoCodeInput,
+                        onValueChange = { promoCodeInput = it },
+                        placeholder = { Text("Promo Code", color = Color.Gray) },
+                        modifier = Modifier.weight(1f).height(50.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            cursorColor = ElectricLime,
+                            focusedBorderColor = ElectricLime,
+                            unfocusedBorderColor = Color.Gray
+                        ),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = { onApplyPromoCode(promoCodeInput) },
+                        colors = ButtonDefaults.buttonColors(containerColor = ElectricLime),
+                        modifier = Modifier.height(50.dp),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text("Apply", color = Color.Black)
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(8.dp))
             
@@ -950,6 +1090,119 @@ fun PaymentSelectionDialog(
                 
                 TextButton(onClick = onDismiss) {
                     Text("Cancel", color = Color.Gray)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LoyaltySearchDialog(
+    onSearch: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var phoneInput by remember { mutableStateOf("") }
+    
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = Color(0xFF1E1E1E),
+            modifier = Modifier.fillMaxWidth().padding(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Text("CurbOS Loyalty", style = MaterialTheme.typography.headlineMedium, color = ElectricLime)
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                OutlinedTextField(
+                    value = phoneInput,
+                    onValueChange = { phoneInput = it },
+                    label = { Text("Phone Number") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = ElectricLime,
+                        focusedBorderColor = ElectricLime,
+                        unfocusedBorderColor = Color.Gray,
+                        focusedLabelColor = ElectricLime,
+                        unfocusedLabelColor = Color.Gray
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone)
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Button(
+                    onClick = { onSearch(phoneInput); onDismiss() },
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = ElectricLime)
+                ) {
+                    Text("Search / Attach", color = Color.Black, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LoyaltyRewardsDialog(
+    customer: Customer,
+    rewards: List<LoyaltyReward>,
+    onRedeem: (LoyaltyReward) -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = Color(0xFF1E1E1E),
+            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.8f)
+        ) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                    Text("Rewards", style = MaterialTheme.typography.headlineSmall, color = Color.White)
+                    IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, null, tint = Color.Gray) }
+                }
+                
+                // Header
+                Card(
+                     colors = CardDefaults.cardColors(containerColor = ElectricLime.copy(alpha = 0.1f)),
+                     modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Balance: ${customer.redeemableMiles.toInt()} Miles", color = ElectricLime, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+                        Text("Rank: ${customer.currentRank}", color = Color.White)
+                    }
+                }
+                
+                Text("Available Rewards", color = Color.Gray, modifier = Modifier.padding(bottom = 8.dp))
+                
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(rewards.sortedBy { it.costMiles }) { reward ->
+                        val canAfford = customer.redeemableMiles >= reward.costMiles
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = if (canAfford) Color.White.copy(alpha=0.1f) else Color.White.copy(alpha=0.02f)),
+                            modifier = Modifier.fillMaxWidth().alpha(if (canAfford) 1f else 0.5f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(reward.description, color = Color.White, fontWeight = FontWeight.Bold)
+                                    Text("${reward.costMiles} Miles", color = ElectricLime)
+                                }
+                                Button(
+                                    onClick = { onRedeem(reward) },
+                                    enabled = canAfford,
+                                    colors = ButtonDefaults.buttonColors(containerColor = ElectricLime, disabledContainerColor = Color.DarkGray)
+                                ) {
+                                    Text("Redeem", color = if (canAfford) Color.Black else Color.Gray)
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

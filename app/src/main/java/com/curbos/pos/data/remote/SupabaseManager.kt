@@ -2,6 +2,8 @@ package com.curbos.pos.data.remote
 
 import com.curbos.pos.data.model.MenuItem
 import com.curbos.pos.data.model.Transaction
+import com.curbos.pos.data.model.Customer
+import com.curbos.pos.data.model.LoyaltyReward
 import com.curbos.pos.BuildConfig
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
@@ -503,6 +505,51 @@ object SupabaseManager {
         } catch (e: Exception) {
             // Ignore if already connected or other transient issues, retry logic handles it
             com.curbos.pos.common.Logger.w("SupabaseRealtime", "Subscribe warning: ${e.message}")
+        }
+    }
+    // Loyalty
+    suspend fun fetchCustomer(phone: String): com.curbos.pos.common.Result<Customer?> {
+        return try {
+            val items = client.postgrest["customers"]
+                .select {
+                    filter {
+                        eq("phone_number", phone)
+                    }
+                    limit(1)
+                }
+                .decodeList<Customer>()
+            
+            com.curbos.pos.common.Result.Success(items.firstOrNull())
+        } catch (e: Exception) {
+            com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to fetch customer: ${e.message}", e)
+            com.curbos.pos.common.Result.Error(e, "Failed to fetch customer: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun upsertCustomer(customer: Customer): com.curbos.pos.common.Result<Customer> {
+        return try {
+            val result = client.postgrest["customers"]
+                .upsert(customer) {
+                    select() // Return the inserted item to get generated ID or updated fields
+                }
+                .decodeSingle<Customer>()
+                
+            com.curbos.pos.common.Result.Success(result)
+        } catch (e: Exception) {
+             com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to upsert customer", e)
+             com.curbos.pos.common.Result.Error(e, "Failed to upsert customer: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun fetchRewards(): com.curbos.pos.common.Result<List<LoyaltyReward>> {
+        return try {
+            val items = client.postgrest["loyalty_rewards"]
+                .select()
+                .decodeList<LoyaltyReward>()
+            com.curbos.pos.common.Result.Success(items)
+        } catch (e: Exception) {
+            com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to fetch rewards", e)
+            com.curbos.pos.common.Result.Error(e, "Failed to fetch rewards: ${e.localizedMessage}")
         }
     }
 }

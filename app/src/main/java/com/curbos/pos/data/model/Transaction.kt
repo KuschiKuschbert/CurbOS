@@ -31,6 +31,21 @@ data class Transaction(
     @kotlinx.serialization.SerialName("customer_name")
     val customerName: String? = null,
     
+    @kotlinx.serialization.SerialName("discount_amount")
+    val discountAmount: Double = 0.0,
+
+    @kotlinx.serialization.SerialName("promo_code")
+    val promoCode: String? = null,
+
+    @kotlinx.serialization.SerialName("customer_id")
+    val customerId: String? = null,
+
+    @kotlinx.serialization.SerialName("miles_earned")
+    val milesEarned: Double = 0.0,
+
+    @kotlinx.serialization.SerialName("miles_redeemed")
+    val milesRedeemed: Double = 0.0,
+
     @kotlinx.serialization.Transient
     @kotlinx.serialization.SerialName("square_transaction_id")
     val squareTransactionId: String? = null,
