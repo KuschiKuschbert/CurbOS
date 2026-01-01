@@ -1463,7 +1463,7 @@ fun QRScannerDialog(
                     modifier = Modifier.fillMaxSize().padding(32.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Box(modifier = Modifier.size(200.dp).Border(2.dp, ElectricLime, RoundedCornerShape(8.dp)))
+                    Box(modifier = Modifier.size(200.dp).border(2.dp, ElectricLime, RoundedCornerShape(8.dp)))
                 }
 
                 IconButton(
