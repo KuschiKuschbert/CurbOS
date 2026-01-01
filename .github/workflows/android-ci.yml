@@ -10,7 +10,8 @@ jobs:
     name: Build APK
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
+      actions: read
 
     steps:
     - uses: actions/checkout@v3

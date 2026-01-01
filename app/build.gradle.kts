@@ -31,12 +31,12 @@ fun getGitCommitCount(): Int {
 
 android {
     namespace = "com.curbos.pos"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.curbos.pos"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 35
         
         versionCode = getGitCommitCount()
         
