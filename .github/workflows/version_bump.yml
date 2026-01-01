@@ -28,6 +28,12 @@ jobs:
           chmod +x scripts/publish_version.sh
           ./scripts/publish_version.sh ${{ github.event.inputs.new_version }}
           
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: curbos-release-v${{ github.event.inputs.new_version }}
+          path: app/build/outputs/apk/release/app-release.apk
+
       - name: Commit changes
         run: |
           git config --local user.email "action@github.com"
