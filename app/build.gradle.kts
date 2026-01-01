@@ -56,6 +56,12 @@ android {
         }
         manifestPlaceholders["auth0Domain"] = "dev-7myakdl4itf644km.us.auth0.com"
         manifestPlaceholders["auth0Scheme"] = "demo"
+
+        // Export Room Schemas
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
+        }
+
         // Enterprise Security: Read secrets from environment (CI) or local.properties (dev)
         val localProperties = Properties()
         val localPropertiesFile = rootProject.file("local.properties")

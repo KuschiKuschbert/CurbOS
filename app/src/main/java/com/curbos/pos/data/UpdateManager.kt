@@ -38,6 +38,7 @@ class UpdateManager @Inject constructor(
 
     suspend fun checkForUpdate(isDevMode: Boolean): GithubRelease? = withContext(Dispatchers.IO) {
         try {
+            // Fetch release
             val release = if (isDevMode) {
                  githubService.getReleaseByTag("KuschiKuschbert", "CurbOS", "dev")
             } else {
@@ -55,17 +56,18 @@ class UpdateManager @Inject constructor(
                 val releaseDate = sdf.parse(release.publishedAt)?.time ?: 0L
                 val installDate = context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime
                 
-                // Add buffer (e.g. 5 mins) to avoid clock skew issues, or strict comparison
-                // Ideally, download builds are always newer than install time if they are fresh.
-                if (releaseDate > installDate) {
+                // Add buffer (e.g. 5 mins) to avoid clock skew issues
+                if (releaseDate > installDate + 300_000) {
                     return@withContext release
                 }
                 return@withContext null
             }
 
-            if (remoteVersion != currentVersion) {
+            // Proper SemVer Comparison for Prod
+            if (isUpdateNewer(currentVersion, remoteVersion)) {
                 return@withContext release
             }
+            
             return@withContext null
         } catch (e: Exception) {
             Logger.e("UpdateManager", "Check failed", e)
@@ -73,18 +75,33 @@ class UpdateManager @Inject constructor(
         }
     }
 
+    private fun isUpdateNewer(current: String, remote: String): Boolean {
+        try {
+            val currentParts = current.split(".").map { it.toIntOrNull() ?: 0 }
+            val remoteParts = remote.split(".").map { it.toIntOrNull() ?: 0 }
+            
+            val length = maxOf(currentParts.size, remoteParts.size)
+            for (i in 0 until length) {
+                val c = currentParts.getOrElse(i) { 0 }
+                val r = remoteParts.getOrElse(i) { 0 }
+                if (r > c) return true
+                if (r < c) return false
+            }
+        } catch (e: Exception) {
+            Logger.e("UpdateManager", "Version parse error", e)
+        }
+        return false // Default to no update if error or equal
+    }
+
     suspend fun downloadAndInstall(downloadUrl: String) {
         val fileName = "curbos_update.apk"
         _downloadProgress.value = 0
         
-        // Clean up old files
-        val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
-        if (file.exists()) file.delete()
-
+        // Use DownloadManager
         val request = DownloadManager.Request(Uri.parse(downloadUrl))
             .setTitle("Downloading CurbOS Update")
             .setDescription("Please wait...")
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE) // Don't notify completion, we handle it
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
             .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
             .setMimeType("application/vnd.android.package-archive")
 
@@ -116,36 +133,11 @@ class UpdateManager @Inject constructor(
             }
         }
 
-        // Register receiver for when download is complete (redundant check but triggers install)
-        // using RECEIVER_EXPORTED for Android 13+ support
-        val onComplete = object : BroadcastReceiver() {
-            override fun onReceive(ctxt: Context, intent: Intent) {
-                val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-                if (id == downloadId) {
-                    _downloadProgress.value = 100
-                    installApk(fileName, context)
-                    try {
-                        context.unregisterReceiver(this)
-                    } catch (e: Exception) { /* already removed */ }
-                }
-            }
-        }
-        
-        ContextCompat.registerReceiver(
-            context, 
-            onComplete, 
-            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), 
-            ContextCompat.RECEIVER_EXPORTED
-        )
+        // Install
+        installApk(downloadId, context)
     }
 
-    private fun installApk(fileName: String, context: Context) {
-        val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
-        if (!file.exists()) {
-             Logger.e("UpdateManager", "File not found for install: $fileName")
-             return
-        }
-
+    private fun installApk(downloadId: Long, context: Context) {
         val packageInstaller = context.packageManager.packageInstaller
         val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
         
@@ -154,13 +146,21 @@ class UpdateManager @Inject constructor(
         }
 
         try {
+            val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            val pfd = dm.openDownloadedFile(downloadId) ?: run {
+                Logger.e("UpdateManager", "Failed to open downloaded file")
+                return
+            }
+
             val sessionId = packageInstaller.createSession(params)
             val session = packageInstaller.openSession(sessionId)
             
-            file.inputStream().use { inputStream ->
-                session.openWrite("curbos_install", 0, file.length()).use { outputStream ->
-                    inputStream.copyTo(outputStream)
-                    session.fsync(outputStream)
+            pfd.let { parcelFileDescriptor ->
+                android.os.ParcelFileDescriptor.AutoCloseInputStream(parcelFileDescriptor).use { inputStream ->
+                    session.openWrite("curbos_install", 0, -1).use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                        session.fsync(outputStream)
+                    }
                 }
             }
 

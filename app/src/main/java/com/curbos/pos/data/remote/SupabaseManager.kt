@@ -31,12 +31,25 @@ object SupabaseManager {
 
     // Use a lazy delegate so we can ensure initialization happens on the Main thread 
     // if accessed from there, or we can pre-init it safely.
+    // Use a lazy delegate so we can ensure initialization happens on the Main thread 
+    // if accessed from there, or we can pre-init it safely.
     val client: SupabaseClient by lazy {
         if (SUPABASE_URL.isBlank() || SUPABASE_KEY.isBlank()) {
            throw IllegalStateException("Supabase Configuration Missing! URL or Key is empty. Check BuildConfig and CI Secrets.")
         }
+        
+        // Auto-fix localhost for Android Emulator
+        // If running on real device, 10.0.2.2 won't work either, but localhost DEFINITELY won't work.
+        // This attempts to help emulator dev environments.
+        val configUrl = if (SUPABASE_URL.contains("localhost")) {
+            com.curbos.pos.common.Logger.w("SupabaseManager", "Localhost detected in config. Rewriting to 10.0.2.2 for emulator access.")
+            SUPABASE_URL.replace("localhost", "10.0.2.2")
+        } else {
+            SUPABASE_URL
+        }
+
         createSupabaseClient(
-            supabaseUrl = SUPABASE_URL,
+            supabaseUrl = configUrl,
             supabaseKey = SUPABASE_KEY
         ) {
             httpEngine = CIO.create()
@@ -65,19 +78,25 @@ object SupabaseManager {
         client
     }
 
+    @Volatile
+    private var remoteLoggingDisabled = false
+
     suspend fun logRemoteError(entry: com.curbos.pos.common.Logger.RemoteLogEntry) {
+        if (remoteLoggingDisabled) return
+
         try {
             client.postgrest["admin_error_logs"].insert(entry)
+        } catch (e: io.github.jan.supabase.exceptions.NotFoundRestException) {
+            // Table doesn't exist. Disable remote logging to prevent spam/crash loop.
+            remoteLoggingDisabled = true
+            android.util.Log.w("SupabaseManager", "Remote logging disabled: 'admin_error_logs' table not found.")
         } catch (e: Exception) {
             // Failure here must be silent for the logger to avoid direct recursion or crash
             try {
-                // Ensure Logger is initialized or use android.util.Log if circular dependency
-                // But Logger doesn't depend on SupabaseManager context usually.
-                // Assuming Logger is available.
-                // Actually SupabaseManager is data layer. Logger is common.
-                com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to insert remote log", e)
+                // Ensure we don't recurse if the Logger tries to remote log this error too
+                android.util.Log.e("SupabaseManager", "Failed to insert remote log: ${e.message}")
             } catch (inner: Exception) {
-                // formatting error?
+                // ignore
             }
         }
     }

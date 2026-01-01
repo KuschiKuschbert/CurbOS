@@ -26,7 +26,7 @@ object AppModule {
             AppDatabase::class.java,
             "curbos-pos-db"
         )
-        .fallbackToDestructiveMigration() // Use migration properly in real enterprise, but fallback for now to avoid crashes
+        // .fallbackToDestructiveMigration() // REMOVED: Never wipe data on updates.
         .build()
     }
 
