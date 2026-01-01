@@ -67,19 +67,10 @@ fi
 
 echo "🏗️  Building Release APK..."
 
-# Extract Major.Minor from NEW_VERSION (e.g., 0.4.1 -> 0.4)
-MAJOR_MINOR=$(echo "$NEW_VERSION" | cut -d. -f1-2)
-
-# If running in GitHub Actions, append run number and 69
-if [ -n "$GITHUB_RUN_NUMBER" ]; then
-    FULL_VERSION="${MAJOR_MINOR}.${GITHUB_RUN_NUMBER}.69"
-    echo "ℹ️  CI Detected: Using full version format: $FULL_VERSION"
-    VERSION_ARG="-PversionName=$FULL_VERSION"
-else
-    FULL_VERSION="$NEW_VERSION"
-    echo "ℹ️  Local build: Using input version: $FULL_VERSION"
-    VERSION_ARG=""
-fi
+# Handle full version name
+FULL_VERSION="$NEW_VERSION"
+VERSION_ARG="-PversionName=$FULL_VERSION"
+echo "ℹ️  Using version: $FULL_VERSION"
 
 # Export for use in GitHub Actions workflow if needed (e.g. for artifact name)
 if [ -n "$GITHUB_ENV" ]; then
