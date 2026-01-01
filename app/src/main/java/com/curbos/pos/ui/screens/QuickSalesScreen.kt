@@ -1319,7 +1319,7 @@ fun LoyaltySearchDialog(
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(customer.fullName ?: "Unknown", color = Color.White, fontWeight = FontWeight.Bold)
-                                            Text(customer.phoneNumber ?: "No Phone", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                                            Text(customer.phoneNumber, color = Color.Gray, style = MaterialTheme.typography.bodySmall)
                                         }
                                         Column(horizontalAlignment = Alignment.End) {
                                             Text("${customer.redeemableMiles.toInt()} Miles", color = ElectricLime, fontWeight = FontWeight.Bold)

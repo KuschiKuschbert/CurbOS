@@ -257,11 +257,16 @@ class SalesViewModel @javax.inject.Inject constructor(
     fun attachCustomerById(id: String) {
         launchCatching {
             val result = transactionRepository.getCustomerById(id)
-            if (result is com.curbos.pos.common.Result.Success && result.data != null) {
-                attachCustomer(result.data!!)
-                com.curbos.pos.common.SnackbarManager.showSuccess("Customer Attached: ${result.data!!.fullName ?: id}")
+            if (result is com.curbos.pos.common.Result.Success) {
+                val customer = result.data
+                if (customer != null) {
+                    attachCustomer(customer)
+                    com.curbos.pos.common.SnackbarManager.showSuccess("Customer Attached: ${customer.fullName ?: id}")
+                } else {
+                    reportError("Customer not found.")
+                }
             } else {
-                reportError("Customer not found or error occurred.")
+                reportError("Error fetching customer.")
             }
         }
     }
