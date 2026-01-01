@@ -44,6 +44,10 @@ import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Check
+import androidx.material.icons.filled.Refresh
+import androidx.material.icons.filled.Share
+import androidx.material.icons.filled.QrCodeScanner
+import androidx.compose.foundation.border
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.ui.graphics.asImageBitmap
 import com.curbos.pos.data.model.MenuItem
