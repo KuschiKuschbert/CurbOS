@@ -36,35 +36,50 @@ jobs:
         # Extract base version (e.g. "0.4.2") from build.gradle.kts
         BASE_VERSION=$(grep 'val baseVersionName =' app/build.gradle.kts | sed 's/.*= "\(.*\)".*/\1/')
         
-        # Construct new version: Version-69-nightly.RunNumber
-        # Added '69' flavor as requested by the user in a non-disturbing way.
-        NEW_VERSION="${BASE_VERSION}-69-nightly.${{ github.run_number }}"
+        # Check commit message for explicit release intent
+        COMMIT_MSG="${{ github.event.head_commit.message }}"
+        
+        if [[ "$COMMIT_MSG" == *"v$BASE_VERSION"* ]] || [[ "$COMMIT_MSG" == *"release"* ]] || [[ "$COMMIT_MSG" == *"bump"* ]]; then
+            echo "MATCH: Commit message '$COMMIT_MSG' implies release for $BASE_VERSION"
+            NEW_VERSION="$BASE_VERSION"
+            IS_PRERELEASE="false"
+        else
+            echo "NO MATCH: Using dev versioning."
+            NEW_VERSION="${BASE_VERSION}-dev.${{ github.run_number }}"
+            IS_PRERELEASE="true"
+        fi
         
         echo "Computed Version: $NEW_VERSION"
         echo "VERSION_NAME=$NEW_VERSION" >> $GITHUB_ENV
+        echo "IS_PRERELEASE=$IS_PRERELEASE" >> $GITHUB_ENV
 
-    - name: Build Debug APK
+    - name: Build Release APK
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-        SIGNING_STORE_PASSWORD: "CurbOS_Secure_2025!"
-        SIGNING_KEY_ALIAS: "key0"
-        SIGNING_KEY_PASSWORD: "CurbOS_Secure_2025!"
-      run: ./gradlew assembleDebug -PversionName=${{ env.VERSION_NAME }}
+        SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+        SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+        SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+      run: ./gradlew assembleRelease -PversionName=${{ env.VERSION_NAME }}
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: curbos-v${{ env.VERSION_NAME }}
-        path: app/build/outputs/apk/debug/app-debug.apk
+        path: app/build/outputs/apk/release/app-release.apk
 
     - name: Create GitHub Release
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
+        PRERELEASE_FLAG=""
+        if [ "${{ env.IS_PRERELEASE }}" == "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+        fi
+
         gh release create "v${{ env.VERSION_NAME }}" \
-          app/build/outputs/apk/debug/app-debug.apk \
+          app/build/outputs/apk/release/app-release.apk \
           --title "v${{ env.VERSION_NAME }}" \
-          --notes "Automated build for version ${{ env.VERSION_NAME }}. Branch: ${{ github.ref_name }}" \
+          --notes "Automated release. Version: ${{ env.VERSION_NAME }}. Commit: ${{ github.event.head_commit.message }}" \
           --target ${{ github.sha }} \
-          --prerelease
+          $PRERELEASE_FLAG || echo "Release v${{ env.VERSION_NAME }} already exists or failed."
