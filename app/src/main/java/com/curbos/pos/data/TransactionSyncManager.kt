@@ -16,6 +16,8 @@ import kotlinx.coroutines.sync.withLock
 import com.curbos.pos.data.p2p.P2PConnectivityManager
 import com.curbos.pos.data.p2p.P2PMessage
 import com.curbos.pos.data.p2p.MESSAGE_TYPE
+import com.curbos.pos.data.model.OfflineCustomerUpdate
+import com.curbos.pos.data.model.Customer
 
 @javax.inject.Singleton
 class TransactionSyncManager @javax.inject.Inject constructor(
@@ -77,6 +79,19 @@ class TransactionSyncManager @javax.inject.Inject constructor(
         }
     }
 
+    suspend fun stageCustomerUpdate(customer: Customer) {
+        try {
+            com.curbos.pos.common.Logger.d("TransactionSyncManager", "Staging customer update for ${customer.id}")
+            val jsonString = json.encodeToString(customer)
+            val offlineUpdate = OfflineCustomerUpdate(customerJson = jsonString)
+            posDao.insertOfflineCustomerUpdate(offlineUpdate)
+            com.curbos.pos.common.Logger.d("TransactionSyncManager", "Customer update staged.")
+        } catch (e: Exception) {
+            com.curbos.pos.common.Logger.e("TransactionSyncManager", "Staging customer update error: ${e.message}", e)
+            throw e
+        }
+    }
+
     suspend fun processQueue() {
         processQueueWithResult()
     }
@@ -89,9 +104,11 @@ class TransactionSyncManager @javax.inject.Inject constructor(
         syncMutex.withLock {
             try {
                 val offlineTransactions = posDao.getOfflineTransactions()
-                if (offlineTransactions.isEmpty()) return true
+                val offlineCustomers = posDao.getOfflineCustomerUpdates()
+                
+                if (offlineTransactions.isEmpty() && offlineCustomers.isEmpty()) return true
 
-                com.curbos.pos.common.Logger.d("TransactionSyncManager", "Processing queue: ${offlineTransactions.size} items")
+                com.curbos.pos.common.Logger.d("TransactionSyncManager", "Processing queues: ${offlineTransactions.size} transactions, ${offlineCustomers.size} customers")
 
                 var allSuccess = true
 
@@ -143,6 +160,42 @@ class TransactionSyncManager @javax.inject.Inject constructor(
                         }
                     }
                 }
+
+                // 2. Process Offline Customer Updates
+                if (offlineCustomers.isNotEmpty()) {
+                    com.curbos.pos.common.Logger.d("TransactionSyncManager", "Processing customer queue: ${offlineCustomers.size} items")
+                    offlineCustomers.forEach { offlineCustomer ->
+                        val customer = try {
+                            json.decodeFromString<Customer>(offlineCustomer.customerJson)
+                        } catch (e: Exception) {
+                            posDao.deleteOfflineCustomerUpdate(offlineCustomer)
+                            return@forEach
+                        }
+
+                        try {
+                            com.curbos.pos.common.Logger.d("TransactionSyncManager", "Uploading customer ${customer.id}...")
+                            val result = SupabaseManager.upsertCustomer(customer)
+                            when (result) {
+                                is Result.Success -> {
+                                    com.curbos.pos.common.Logger.d("TransactionSyncManager", "Customer upload success. Deleting record ${offlineCustomer.id}...")
+                                    posDao.deleteOfflineCustomerUpdate(offlineCustomer)
+                                }
+                                is Result.Error -> {
+                                    if (result.message?.contains("duplicate key") == true || result.message?.contains("conflict") == true) {
+                                        posDao.deleteOfflineCustomerUpdate(offlineCustomer)
+                                    } else {
+                                        com.curbos.pos.common.Logger.e("TransactionSyncManager", "Customer sync failed: ${result.message}")
+                                        allSuccess = false
+                                    }
+                                }
+                                else -> { allSuccess = false }
+                            }
+                        } catch (e: Exception) {
+                            allSuccess = false
+                        }
+                    }
+                }
+
                 return allSuccess
             } catch (e: Exception) {
                 e.printStackTrace()

@@ -97,6 +97,16 @@ interface PosDao {
     @androidx.room.Delete
     suspend fun deleteOfflineTransaction(transaction: com.curbos.pos.data.model.OfflineTransaction)
 
+    // Offline Customer Queue
+    @Insert
+    suspend fun insertOfflineCustomerUpdate(update: com.curbos.pos.data.model.OfflineCustomerUpdate)
+
+    @Query("SELECT * FROM offline_customer_updates ORDER BY id ASC")
+    suspend fun getOfflineCustomerUpdates(): List<com.curbos.pos.data.model.OfflineCustomerUpdate>
+
+    @androidx.room.Delete
+    suspend fun deleteOfflineCustomerUpdate(update: com.curbos.pos.data.model.OfflineCustomerUpdate)
+
     @Query("SELECT MAX(orderNumber) FROM transactions WHERE timestamp >= :startOfDay")
     suspend fun getTodayMaxOrderNumber(startOfDay: Long): Int?
 

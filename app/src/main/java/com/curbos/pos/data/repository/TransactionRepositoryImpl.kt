@@ -157,16 +157,23 @@ class TransactionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun createOrUpdateCustomer(customer: Customer): Result<Customer> {
-        // Optimistic Local Update
-        posDao.insertCustomer(customer)
-        
-        // Remote Update
-        val result = SupabaseManager.upsertCustomer(customer)
-        if (result is Result.Success) {
-            // Update local with server response (e.g. updated miles/rank if db triggers ran)
-            posDao.insertCustomer(result.data)
+        return try {
+            // 1. Optimistic Local Update
+            posDao.insertCustomer(customer)
+            
+            // 2. Stage for background sync (Offline Ready)
+            transactionSyncManager.stageCustomerUpdate(customer)
+            
+            // 3. Trigger immediate background sync
+            triggerSync()
+            externalScope.launch {
+                transactionSyncManager.processQueue()
+            }
+            
+            Result.Success(customer)
+        } catch (e: Exception) {
+            Result.Error(e, "Failed to update customer: ${e.message}")
         }
-        return result
     }
 
     override fun getLoyaltyRewards(): Flow<List<LoyaltyReward>> {
