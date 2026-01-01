@@ -36,9 +36,9 @@ jobs:
         # Extract base version (e.g. "0.4.2") from build.gradle.kts
         BASE_VERSION=$(grep 'val baseVersionName =' app/build.gradle.kts | sed 's/.*= "\(.*\)".*/\1/')
         
-        # Construct new version: Version-nightly.RunNumber
-        # This keeps the versioning logical and related to the base version.
-        NEW_VERSION="${BASE_VERSION}-nightly.${{ github.run_number }}"
+        # Construct new version: Version-69-nightly.RunNumber
+        # Added '69' flavor as requested by the user in a non-disturbing way.
+        NEW_VERSION="${BASE_VERSION}-69-nightly.${{ github.run_number }}"
         
         echo "Computed Version: $NEW_VERSION"
         echo "VERSION_NAME=$NEW_VERSION" >> $GITHUB_ENV
