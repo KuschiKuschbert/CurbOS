@@ -110,7 +110,6 @@ interface PosDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCustomer(customer: Customer)
 
-    @Update
     @Query("SELECT * FROM customers ORDER BY fullName ASC")
     fun getAllCustomers(): Flow<List<Customer>>
 
