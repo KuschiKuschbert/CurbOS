@@ -46,3 +46,13 @@ jobs:
           else
             echo "No changes to commit. Version likely already bumped."
           fi
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create v${{ github.event.inputs.new_version }} \
+            app/build/outputs/apk/release/app-release.apk \
+            --title "v${{ github.event.inputs.new_version }}" \
+            --notes "Automated release build." \
+            --target main
