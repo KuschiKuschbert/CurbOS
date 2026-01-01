@@ -1423,6 +1423,7 @@ fun LoyaltyRewardsDialog(
     }
 }
 
+@androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
 @Composable
 fun QRScannerDialog(
     onResult: (String) -> Unit,
