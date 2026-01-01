@@ -526,6 +526,37 @@ object SupabaseManager {
         }
     }
 
+    suspend fun fetchCustomerById(id: String): com.curbos.pos.common.Result<Customer?> {
+        return try {
+            val items = client.postgrest["customers"]
+                .select {
+                    filter {
+                        eq("id", id)
+                    }
+                    limit(1)
+                }
+                .decodeList<Customer>()
+            
+            com.curbos.pos.common.Result.Success(items.firstOrNull())
+        } catch (e: Exception) {
+            com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to fetch customer by ID: ${e.message}", e)
+            com.curbos.pos.common.Result.Error(e, "Failed to fetch customer by ID: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun fetchAllCustomers(): com.curbos.pos.common.Result<List<Customer>> {
+        return try {
+            val items = client.postgrest["customers"]
+                .select()
+                .decodeList<Customer>()
+            
+            com.curbos.pos.common.Result.Success(items)
+        } catch (e: Exception) {
+            com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to fetch all customers: ${e.message}", e)
+            com.curbos.pos.common.Result.Error(e, "Failed to fetch all customers: ${e.localizedMessage}")
+        }
+    }
+
     suspend fun upsertCustomer(customer: Customer): com.curbos.pos.common.Result<Customer> {
         return try {
             val result = client.postgrest["customers"]

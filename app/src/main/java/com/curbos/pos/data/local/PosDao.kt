@@ -104,8 +104,18 @@ interface PosDao {
     @Query("SELECT * FROM customers WHERE phoneNumber = :phone")
     suspend fun getCustomerByPhone(phone: String): Customer?
 
+    @Query("SELECT * FROM customers WHERE id = :id")
+    suspend fun getCustomerById(id: String): Customer?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCustomer(customer: Customer)
+
+    @Update
+    @Query("SELECT * FROM customers ORDER BY fullName ASC")
+    fun getAllCustomers(): Flow<List<Customer>>
+
+    @Query("SELECT * FROM customers WHERE fullName LIKE :query OR phoneNumber LIKE :query ORDER BY fullName ASC")
+    fun searchCustomersByName(query: String): Flow<List<Customer>>
 
     @Update
     suspend fun updateCustomer(customer: Customer)

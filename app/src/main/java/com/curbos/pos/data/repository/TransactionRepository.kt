@@ -18,7 +18,13 @@ interface TransactionRepository {
     
     // Loyalty
     suspend fun getCustomerByPhone(phone: String): Result<Customer?>
+    suspend fun getCustomerById(id: String): Result<Customer?>
     suspend fun createOrUpdateCustomer(customer: Customer): Result<Customer>
     fun getLoyaltyRewards(): Flow<List<LoyaltyReward>>
     suspend fun syncRewards() // Fetch from Supabase
+    
+    // Customer Directory
+    fun getAllCustomers(): Flow<List<Customer>>
+    fun searchCustomers(query: String): Flow<List<Customer>>
+    suspend fun syncAllCustomers(): Result<Unit>
 }

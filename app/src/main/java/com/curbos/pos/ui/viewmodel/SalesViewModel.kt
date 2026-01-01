@@ -40,7 +40,9 @@ data class SalesUiState(
     val selectedCustomer: Customer? = null,
     val loyaltyRewards: List<LoyaltyReward> = emptyList(),
     val isLoyaltyDialogVisible: Boolean = false,
-    val milesRedeemed: Double = 0.0
+    val isScannerVisible: Boolean = false,
+    val milesRedeemed: Double = 0.0,
+    val allCustomers: List<Customer> = emptyList()
 )
 
 @dagger.hilt.android.lifecycle.HiltViewModel
@@ -69,6 +71,13 @@ class SalesViewModel @javax.inject.Inject constructor(
         viewModelScope.launch {
             posDao.getAllTransactions().collect { transactions ->
                 _uiState.update { it.copy(recentTransactions = transactions.take(20)) }
+            }
+        }
+
+        // Observe All Customers
+        viewModelScope.launch {
+            transactionRepository.getAllCustomers().collect { customers ->
+                _uiState.update { it.copy(allCustomers = customers) }
             }
         }
     }
@@ -235,12 +244,24 @@ class SalesViewModel @javax.inject.Inject constructor(
     }
 
     fun attachCustomer(customer: Customer) {
-        _uiState.update { it.copy(selectedCustomer = customer) }
-        // Fetch Rewards?
+        _uiState.update { it.copy(selectedCustomer = customer, customerName = "") }
+        // Fetch Rewards
         viewModelScope.launch {
             transactionRepository.syncRewards()
             transactionRepository.getLoyaltyRewards().collect { rewards ->
                 _uiState.update { it.copy(loyaltyRewards = rewards) }
+            }
+        }
+    }
+
+    fun attachCustomerById(id: String) {
+        launchCatching {
+            val result = transactionRepository.getCustomerById(id)
+            if (result is com.curbos.pos.common.Result.Success && result.data != null) {
+                attachCustomer(result.data!!)
+                com.curbos.pos.common.SnackbarManager.showSuccess("Customer Attached: ${result.data!!.fullName ?: id}")
+            } else {
+                reportError("Customer not found or error occurred.")
             }
         }
     }
@@ -252,6 +273,25 @@ class SalesViewModel @javax.inject.Inject constructor(
                 milesRedeemed = 0.0,
                 discountAmount = 0.0 // Reset discount if removing customer? Maybe ask user. For now, reset.
             ) 
+        }
+    }
+
+    fun searchAllCustomers(query: String) {
+        viewModelScope.launch {
+            transactionRepository.searchCustomers(query).collect { customers ->
+                _uiState.update { it.copy(allCustomers = customers) }
+            }
+        }
+    }
+
+    fun syncAllCustomers() {
+        launchCatching {
+            val result = transactionRepository.syncAllCustomers()
+            if (result is com.curbos.pos.common.Result.Success) {
+                com.curbos.pos.common.SnackbarManager.showSuccess("Customer database synced!")
+            } else {
+                reportError("Sync failed: ${(result as com.curbos.pos.common.Result.Error).message}")
+            }
         }
     }
 
@@ -298,6 +338,14 @@ class SalesViewModel @javax.inject.Inject constructor(
     
     fun hideLoyaltyDialog() {
         _uiState.update { it.copy(isLoyaltyDialogVisible = false) }
+    }
+
+    fun showScanner() {
+        _uiState.update { it.copy(isScannerVisible = true) }
+    }
+
+    fun hideScanner() {
+        _uiState.update { it.copy(isScannerVisible = false) }
     }
 
 

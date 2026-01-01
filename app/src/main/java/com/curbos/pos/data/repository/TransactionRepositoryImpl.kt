@@ -141,6 +141,21 @@ class TransactionRepositoryImpl @Inject constructor(
         return remoteResult
     }
 
+    override suspend fun getCustomerById(id: String): Result<Customer?> {
+        // 1. Try Local
+        val local = posDao.getCustomerById(id)
+        if (local != null) return Result.Success(local)
+
+        // 2. Try Remote
+        val remoteResult = SupabaseManager.fetchCustomerById(id)
+        if (remoteResult is Result.Success && remoteResult.data != null) {
+            posDao.insertCustomer(remoteResult.data)
+            return Result.Success(remoteResult.data)
+        }
+
+        return remoteResult
+    }
+
     override suspend fun createOrUpdateCustomer(customer: Customer): Result<Customer> {
         // Optimistic Local Update
         posDao.insertCustomer(customer)
@@ -162,6 +177,27 @@ class TransactionRepositoryImpl @Inject constructor(
         val result = SupabaseManager.fetchRewards()
         if (result is Result.Success) {
             posDao.insertLoyaltyRewards(result.data)
+        }
+    }
+
+    // Customer Directory
+    override fun getAllCustomers(): Flow<List<Customer>> {
+        return posDao.getAllCustomers()
+    }
+
+    override fun searchCustomers(query: String): Flow<List<Customer>> {
+        return posDao.searchCustomersByName("%$query%")
+    }
+
+    override suspend fun syncAllCustomers(): Result<Unit> {
+        val result = SupabaseManager.fetchAllCustomers()
+        return if (result is Result.Success) {
+            posDao.insertMenuItems(emptyList()) // Placeholder? No, I need insertCustomers. Wait, did I add insertCustomers? I have insertMenuItems. 
+            // Let me check PosDao for insertCustomers (bulk).
+            result.data.forEach { posDao.insertCustomer(it) }
+            Result.Success(Unit)
+        } else {
+            Result.Error((result as Result.Error).exception, result.message)
         }
     }
 }

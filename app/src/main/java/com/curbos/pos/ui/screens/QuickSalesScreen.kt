@@ -58,6 +58,47 @@ import com.curbos.pos.util.HapticHelper
 import com.curbos.pos.util.SquareHelper
 import com.curbos.pos.ui.components.PulsatingBackground
 import kotlinx.coroutines.launch
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.Preview
+import androidx.camera.view.PreviewView
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.core.content.ContextCompat
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.common.InputImage
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.LifecycleOwner
+import java.util.concurrent.Executors
+
+private fun shareCustomerCard(context: android.content.Context, customer: Customer) {
+    val bitmap = com.curbos.pos.util.QRCodeGenerator.generateQRCode(customer.id) ?: return
+    
+    // Save to cache and share
+    try {
+        val cachePath = java.io.File(context.cacheDir, "images")
+        cachePath.mkdirs()
+        val stream = java.io.FileOutputStream(java.io.File(cachePath, "customer_card.png"))
+        bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream)
+        stream.close()
+
+        val contentUri = androidx.core.content.FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.provider",
+            java.io.File(cachePath, "customer_card.png")
+        )
+
+        val shareIntent = android.content.Intent().apply {
+            action = android.content.Intent.ACTION_SEND
+            flags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+            type = "image/png"
+            putExtra(android.content.Intent.EXTRA_STREAM, contentUri)
+            putExtra(android.content.Intent.EXTRA_TEXT, "Your ${customer.fullName}'s Taco Passport!")
+        }
+        context.startActivity(android.content.Intent.createChooser(shareIntent, "Share Customer Card"))
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
 
 // Helper function for Icons
 fun getIconForCategory(category: String?): ImageVector {
@@ -225,6 +266,26 @@ fun QuickSalesScreen(
         }
     }
 
+    // Camera Permission Launcher
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            viewModel.showScanner()
+        } else {
+            viewModel.reportError("Camera permission is required to scan cards.")
+        }
+    }
+
+    val requestCameraAndShowScanner = {
+        val permissionCheck = ContextCompat.checkSelfPermission(context, android.Manifest.permission.CAMERA)
+        if (permissionCheck == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            viewModel.showScanner()
+        } else {
+            cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+        }
+    }
+
     PulsatingBackground {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val isWideScreen = maxWidth > 600.dp
@@ -276,6 +337,7 @@ fun QuickSalesScreen(
                                 onApplyPromoCode = { viewModel.applyPromoCode(it) },
                                 onAttachCustomerClick = { viewModel.showLoyaltyDialog() },
                                 onDetachCustomerClick = { viewModel.detachCustomer() },
+                                onScanClick = { requestCameraAndShowScanner() },
                                 onPaymentSelected = { type -> 
                                     if (uiState.customerName.isBlank() && uiState.selectedCustomer == null) {
                                         viewModel.reportError("Please enter a Customer Name / Table #")
@@ -360,6 +422,7 @@ fun QuickSalesScreen(
                                         onApplyPromoCode = { viewModel.applyPromoCode(it) },
                                         onAttachCustomerClick = { viewModel.showLoyaltyDialog() },
                                         onDetachCustomerClick = { viewModel.detachCustomer() },
+                                        onScanClick = { requestCameraAndShowScanner() },
                                         onPaymentSelected = { type -> 
                                             if (uiState.customerName.isBlank() && uiState.selectedCustomer == null) {
                                                 viewModel.reportError("Please enter a Customer Name / Table #")
@@ -462,7 +525,7 @@ fun QuickSalesScreen(
     if (uiState.isLoyaltyDialogVisible) {
         if (uiState.selectedCustomer == null) {
             LoyaltySearchDialog(
-                onSearch = { phone -> viewModel.searchCustomer(phone) },
+                viewModel = viewModel,
                 onDismiss = { viewModel.hideLoyaltyDialog() }
             )
         } else {
@@ -473,6 +536,17 @@ fun QuickSalesScreen(
                 onDismiss = { viewModel.hideLoyaltyDialog() }
             )
         }
+    }
+
+    // Scanner Dialog
+    if (uiState.isScannerVisible) {
+        QRScannerDialog(
+            onResult = { result ->
+                viewModel.attachCustomerById(result)
+                viewModel.hideScanner()
+            },
+            onDismiss = { viewModel.hideScanner() }
+        )
     }
 }
 
@@ -766,6 +840,7 @@ fun CartContent(
     onApplyPromoCode: (String) -> Unit,
     onAttachCustomerClick: () -> Unit,
     onDetachCustomerClick: () -> Unit,
+    onScanClick: () -> Unit,
     onPaymentSelected: (String) -> Unit
 ) {
      val surcharge = totalAmount * 0.022
@@ -826,6 +901,24 @@ fun CartContent(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Attach Customer / Loyalty", color = ElectricLime)
+                }
+                
+                Spacer(modifier = Modifier.width(8.dp))
+                
+                Button(
+                    onClick = { onScanClick() },
+                    modifier = Modifier.weight(0.3f),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                    border = BorderStroke(1.dp, ElectricLime),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(4.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.QrCodeScanner, 
+                        contentDescription = null, 
+                        tint = ElectricLime,
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
             }
         }
@@ -1098,47 +1191,137 @@ fun PaymentSelectionDialog(
 
 @Composable
 fun LoyaltySearchDialog(
-    onSearch: (String) -> Unit,
+    viewModel: SalesViewModel,
     onDismiss: () -> Unit
 ) {
+    val uiState by viewModel.uiState.collectAsState()
     var phoneInput by remember { mutableStateOf("") }
+    var selectedTab by remember { mutableIntStateOf(0) }
+    var searchQuery by remember { mutableStateOf("") }
     
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = Color(0xFF1E1E1E),
-            modifier = Modifier.fillMaxWidth().padding(16.dp)
+            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.85f).padding(16.dp)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Text("CurbOS Loyalty", style = MaterialTheme.typography.headlineMedium, color = ElectricLime)
-                Spacer(modifier = Modifier.height(16.dp))
                 
-                OutlinedTextField(
-                    value = phoneInput,
-                    onValueChange = { phoneInput = it },
-                    label = { Text("Phone Number") },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        cursorColor = ElectricLime,
-                        focusedBorderColor = ElectricLime,
-                        unfocusedBorderColor = Color.Gray,
-                        focusedLabelColor = ElectricLime,
-                        unfocusedLabelColor = Color.Gray
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone)
-                )
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                Button(
-                    onClick = { onSearch(phoneInput); onDismiss() },
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = ElectricLime)
+                TabRow(
+                    selectedTabIndex = selectedTab,
+                    containerColor = Color.Transparent,
+                    contentColor = ElectricLime,
+                    divider = {},
+                    indicator = { tabPositions ->
+                        TabRowDefaults.SecondaryIndicator(
+                            Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                            color = ElectricLime
+                        )
+                    }
                 ) {
-                    Text("Search / Attach", color = Color.Black, fontWeight = FontWeight.Bold)
+                    Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) {
+                        Text("Search Phone", modifier = Modifier.padding(16.dp), color = if (selectedTab == 0) ElectricLime else Color.Gray)
+                    }
+                    Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
+                        Text("All Customers", modifier = Modifier.padding(16.dp), color = if (selectedTab == 1) ElectricLime else Color.Gray)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                if (selectedTab == 0) {
+                    // --- PHONE SEARCH TAB ---
+                    Column {
+                        OutlinedTextField(
+                            value = phoneInput,
+                            onValueChange = { phoneInput = it },
+                            label = { Text("Phone Number") },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                cursorColor = ElectricLime,
+                                focusedBorderColor = ElectricLime,
+                                unfocusedBorderColor = Color.Gray,
+                                focusedLabelColor = ElectricLime,
+                                unfocusedLabelColor = Color.Gray
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone)
+                        )
+                        
+                        Spacer(modifier = Modifier.height(24.dp))
+                        
+                        Button(
+                            onClick = { viewModel.searchCustomer(phoneInput); onDismiss() },
+                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = ElectricLime)
+                        ) {
+                            Text("Search / Attach", color = Color.Black, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                } else {
+                    // --- ALL CUSTOMERS / DIRECTORY TAB ---
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            OutlinedTextField(
+                                value = searchQuery,
+                                onValueChange = { 
+                                    searchQuery = it
+                                    viewModel.searchAllCustomers(it)
+                                },
+                                label = { Text("Search by Name") },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    cursorColor = ElectricLime,
+                                    focusedBorderColor = ElectricLime,
+                                    unfocusedBorderColor = Color.Gray
+                                ),
+                                modifier = Modifier.weight(1f),
+                                singleLine = true
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            IconButton(onClick = { viewModel.syncAllCustomers() }) {
+                                Icon(Icons.Default.Refresh, contentDescription = "Sync All", tint = ElectricLime)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(uiState.allCustomers) { customer ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { 
+                                            viewModel.attachCustomer(customer)
+                                            onDismiss()
+                                        },
+                                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
+                                    border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(customer.fullName ?: "Unknown", color = Color.White, fontWeight = FontWeight.Bold)
+                                            Text(customer.phoneNumber ?: "No Phone", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                                        }
+                                        Column(horizontalAlignment = Alignment.End) {
+                                            Text("${customer.redeemableMiles.toInt()} Miles", color = ElectricLime, fontWeight = FontWeight.Bold)
+                                            Text(customer.currentRank, color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1170,8 +1353,23 @@ fun LoyaltyRewardsDialog(
                      modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Balance: ${customer.redeemableMiles.toInt()} Miles", color = ElectricLime, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
-                        Text("Rank: ${customer.currentRank}", color = Color.White)
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Column {
+                                Text("Balance: ${customer.redeemableMiles.toInt()} Miles", color = ElectricLime, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+                                Text("Rank: ${customer.currentRank}", color = Color.White)
+                            }
+                            Button(
+                                onClick = { 
+                                    shareCustomerCard(context, customer)
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                                border = BorderStroke(1.dp, ElectricLime)
+                            ) {
+                                Icon(Icons.Default.Share, null, tint = ElectricLime, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Share Card", color = ElectricLime)
+                            }
+                        }
                     }
                 }
                 
@@ -1180,6 +1378,106 @@ fun LoyaltyRewardsDialog(
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(rewards.sortedBy { it.costMiles }) { reward ->
                         val canAfford = customer.redeemableMiles >= reward.costMiles
+                        RewardItemRow(reward = reward, canAfford = canAfford, onRedeem = { onRedeem(reward) })
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun QRScannerDialog(
+    onResult: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalContext.current as androidx.lifecycle.LifecycleOwner
+    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+    val scanner = remember { BarcodeScanning.getClient() }
+    val analysisExecutor = remember { Executors.newSingleThreadExecutor() }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = Color.Black,
+            modifier = Modifier.fillMaxWidth().aspectRatio(1f)
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                AndroidView(
+                    factory = { ctx ->
+                        val previewView = PreviewView(ctx)
+                        val preview = Preview.Builder().build()
+                        val selector = CameraSelector.Builder()
+                            .requireLensFacing(CameraSelector.LENS_FACING_BACK)
+                            .build()
+
+                        val imageAnalysis = ImageAnalysis.Builder()
+                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                            .build()
+
+                        imageAnalysis.setAnalyzer(analysisExecutor) { imageProxy ->
+                            val mediaImage = imageProxy.image
+                            if (mediaImage != null) {
+                                val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+                                scanner.process(image)
+                                    .addOnSuccessListener { barcodes ->
+                                        for (barcode in barcodes) {
+                                            barcode.rawValue?.let { value ->
+                                                onResult(value)
+                                            }
+                                        }
+                                    }
+                                    .addOnCompleteListener {
+                                        imageProxy.close()
+                                    }
+                            } else {
+                                imageProxy.close()
+                            }
+                        }
+
+                        cameraProviderFuture.addListener({
+                            val cameraProvider = cameraProviderFuture.get()
+                            try {
+                                cameraProvider.unbindAll()
+                                cameraProvider.bindToLifecycle(
+                                    lifecycleOwner,
+                                    selector,
+                                    preview,
+                                    imageAnalysis
+                                )
+                                preview.setSurfaceProvider(previewView.surfaceProvider)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }, ContextCompat.getMainExecutor(ctx))
+                        
+                        previewView
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+                
+                // Overlay
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(modifier = Modifier.size(200.dp).Border(2.dp, ElectricLime, RoundedCornerShape(8.dp)))
+                }
+
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
+                ) {
+                    Icon(Icons.Default.Close, null, tint = Color.White)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RewardItemRow(reward: LoyaltyReward, canAfford: Boolean, onRedeem: () -> Unit) {
                         Card(
                             colors = CardDefaults.cardColors(containerColor = if (canAfford) Color.White.copy(alpha=0.1f) else Color.White.copy(alpha=0.02f)),
                             modifier = Modifier.fillMaxWidth().alpha(if (canAfford) 1f else 0.5f)

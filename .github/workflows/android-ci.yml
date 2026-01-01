@@ -53,8 +53,19 @@ jobs:
         SIGNING_KEY_PASSWORD: "CurbOS_Secure_2025!"
       run: ./gradlew assembleDebug -PversionName=${{ env.VERSION_NAME }}
 
-    - name: Upload APK
+    - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: curbos-v${{ env.VERSION_NAME }}
         path: app/build/outputs/apk/debug/app-debug.apk
+
+    - name: Create GitHub Release
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release create "v${{ env.VERSION_NAME }}" \
+          app/build/outputs/apk/debug/app-debug.apk \
+          --title "v${{ env.VERSION_NAME }}" \
+          --notes "Automated build for version ${{ env.VERSION_NAME }}. Branch: ${{ github.ref_name }}" \
+          --target ${{ github.sha }} \
+          --prerelease
