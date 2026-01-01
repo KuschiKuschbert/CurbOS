@@ -893,38 +893,40 @@ fun CartContent(
                 }
             } else {
                 // Attach Button
-                Button(
-                    onClick = onAttachCustomerClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Icon(
-                        Icons.Filled.PersonAdd, 
-                        contentDescription = null, 
-                        tint = ElectricLime,
-                        modifier = Modifier.size(16.dp)
-                    )
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Button(
+                        onClick = onAttachCustomerClick,
+                        modifier = Modifier.weight(0.7f),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.PersonAdd, 
+                            contentDescription = null, 
+                            tint = ElectricLime,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Attach Customer / Loyalty", color = ElectricLime, style = MaterialTheme.typography.bodySmall)
+                    }
+                    
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Attach Customer / Loyalty", color = ElectricLime)
-                }
-                
-                Spacer(modifier = Modifier.width(8.dp))
-                
-                Button(
-                    onClick = { onScanClick() },
-                    modifier = Modifier.weight(0.3f),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                    border = BorderStroke(1.dp, ElectricLime),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(4.dp)
-                ) {
-                    Icon(
-                        Icons.Filled.QrCodeScanner, 
-                        contentDescription = null, 
-                        tint = ElectricLime,
-                        modifier = Modifier.size(16.dp)
-                    )
+                    
+                    Button(
+                        onClick = { onScanClick() },
+                        modifier = Modifier.weight(0.3f),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                        border = BorderStroke(1.dp, ElectricLime),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(4.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.QrCodeScanner, 
+                            contentDescription = null, 
+                            tint = ElectricLime,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
             }
         }
