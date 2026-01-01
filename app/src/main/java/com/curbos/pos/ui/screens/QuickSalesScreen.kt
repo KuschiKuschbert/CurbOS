@@ -343,7 +343,8 @@ fun QuickSalesScreen(
                                 onCustomerNameChange = { viewModel.updateCustomerName(it) },
                                 onRemoveItem = { viewModel.removeFromCart(it) },
                                 onApplyPromoCode = { viewModel.applyPromoCode(it) },
-                                onAttachCustomerClick = { viewModel.showLoyaltyDialog() },
+                                onAttachCustomerClick = { viewModel.toggleLoyaltyDialog(true, 0) },
+                                onDatabaseClick = { viewModel.toggleLoyaltyDialog(true, 1) },
                                 onDetachCustomerClick = { viewModel.detachCustomer() },
                                 onScanClick = { requestCameraAndShowScanner() },
                                 onPaymentSelected = { type -> 
@@ -429,6 +430,7 @@ fun QuickSalesScreen(
                                         onRemoveItem = { viewModel.removeFromCart(it) },
                                         onApplyPromoCode = { viewModel.applyPromoCode(it) },
                                         onAttachCustomerClick = { viewModel.showLoyaltyDialog() },
+                                        onDatabaseClick = { viewModel.toggleLoyaltyDialog(true, 1) },
                                         onDetachCustomerClick = { viewModel.detachCustomer() },
                                         onScanClick = { requestCameraAndShowScanner() },
                                         onPaymentSelected = { type -> 
@@ -847,6 +849,7 @@ fun CartContent(
     onRemoveItem: (CartItem) -> Unit,
     onApplyPromoCode: (String) -> Unit,
     onAttachCustomerClick: () -> Unit,
+    onDatabaseClick: () -> Unit,
     onDetachCustomerClick: () -> Unit,
     onScanClick: () -> Unit,
     onPaymentSelected: (String) -> Unit
@@ -915,7 +918,7 @@ fun CartContent(
                     Spacer(modifier = Modifier.width(8.dp))
                     
                     Button(
-                        onClick = { viewModel.toggleLoyaltyDialog(true, 1) },
+                        onClick = onDatabaseClick,
                         modifier = Modifier.weight(0.15f),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
                         shape = RoundedCornerShape(8.dp),

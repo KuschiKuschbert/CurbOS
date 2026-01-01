@@ -92,8 +92,8 @@ class DataSeeder(private val posDao: PosDao) {
             posDao.insertMenuItems(initialItems)
         }
 
-        val currentCustomers = posDao.getAllCustomers()
-        if (currentCustomers.isEmpty()) {
+        val currentCustomers = posDao.getAllCustomers().firstOrNull()
+        if (currentCustomers.isNullOrEmpty()) {
             val testCustomers = listOf(
                 com.curbos.pos.data.model.Customer(
                     id = "c1",
