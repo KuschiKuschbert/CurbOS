@@ -57,9 +57,9 @@ jobs:
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-        SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-        SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-        SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        SIGNING_STORE_PASSWORD: "CurbOS_Secure_2025!"
+        SIGNING_KEY_ALIAS: "key0"
+        SIGNING_KEY_PASSWORD: "CurbOS_Secure_2025!"
       run: ./gradlew assembleRelease -PversionName=${{ env.VERSION_NAME }}
 
     - name: Upload APK Artifact
