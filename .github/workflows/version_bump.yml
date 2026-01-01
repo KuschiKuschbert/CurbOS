@@ -13,10 +13,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/keystore.jks
+
       - name: Update Version
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SIGNING_STORE_PASSWORD: "CurbOS_Secure_2025!"
+          SIGNING_KEY_ALIAS: "key0"
+          SIGNING_KEY_PASSWORD: "CurbOS_Secure_2025!"
         run: |
           chmod +x scripts/publish_version.sh
           ./scripts/publish_version.sh ${{ github.event.inputs.new_version }}
