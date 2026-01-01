@@ -1,80 +1,81 @@
 package com.curbos.pos.ui.screens
 
-import com.curbos.pos.ui.theme.Taco
-import com.curbos.pos.ui.theme.Soda
-import com.curbos.pos.ui.theme.Shirt
-import com.curbos.pos.ui.theme.IceCreamCone
-import androidx.compose.ui.platform.testTag
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.background
-import androidx.compose.material.icons.filled.RestaurantMenu
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import android.app.Activity
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.ui.zIndex
-import androidx.compose.ui.window.Dialog
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.material.ripple.rememberRipple
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.foundation.border
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.border
-import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.ui.graphics.asImageBitmap
-import com.curbos.pos.data.model.MenuItem
-import com.curbos.pos.data.model.ModifierOption
-import com.curbos.pos.data.model.CartItem
-import com.curbos.pos.data.model.Customer
-import com.curbos.pos.data.model.LoyaltyReward
-import com.curbos.pos.ui.theme.ElectricLime
-import com.curbos.pos.ui.theme.SafetyOrange
-import com.curbos.pos.ui.viewmodel.SalesViewModel
-import com.curbos.pos.util.HapticHelper
-import com.curbos.pos.util.SquareHelper
-import com.curbos.pos.ui.components.PulsatingBackground
-import kotlinx.coroutines.launch
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
-import androidx.camera.view.PreviewView
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.RestaurantMenu
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.LifecycleOwner
+import com.curbos.pos.data.model.CartItem
+import com.curbos.pos.data.model.Customer
+import com.curbos.pos.data.model.LoyaltyReward
+import com.curbos.pos.data.model.MenuItem
+import com.curbos.pos.data.model.ModifierOption
+import com.curbos.pos.ui.components.PulsatingBackground
+import com.curbos.pos.ui.theme.ElectricLime
+import com.curbos.pos.ui.theme.IceCreamCone
+import com.curbos.pos.ui.theme.SafetyOrange
+import com.curbos.pos.ui.theme.Shirt
+import com.curbos.pos.ui.theme.Soda
+import com.curbos.pos.ui.theme.Taco
+import com.curbos.pos.ui.viewmodel.SalesViewModel
+import com.curbos.pos.util.HapticHelper
+import com.curbos.pos.util.SquareHelper
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.LifecycleOwner
 import java.util.concurrent.Executors
+import kotlinx.coroutines.launch
 
 private fun shareCustomerCard(context: android.content.Context, customer: Customer) {
     val bitmap = com.curbos.pos.util.QRCodeGenerator.generateQRCode(customer.id) ?: return
@@ -948,43 +949,90 @@ fun CartContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Totals Section
+        var showDetails by remember { mutableStateOf(false) }
+        
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Color.DarkGray.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                .padding(16.dp)
+                .padding(12.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier.fillMaxWidth().clickable { showDetails = !showDetails },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Subtotal:", style = MaterialTheme.typography.bodyLarge, color = Color.White)
-                // If discount exists, subtotal is Total + Discount
-                val subtotalDisplay = if (discountAmount > 0) totalAmount + discountAmount else totalAmount
-                Text("$%.2f".format(subtotalDisplay), style = MaterialTheme.typography.bodyLarge, color = Color.White)
-            }
-            
-            if (discountAmount > 0) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Discount (${appliedPromoCode ?: ""}):", style = MaterialTheme.typography.bodyLarge, color = ElectricLime)
-                    Text("-$%.2f".format(discountAmount), style = MaterialTheme.typography.bodyLarge, color = ElectricLime)
+                Column {
+                    Text("Subtotal:", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                    val subtotalDisplay = if (discountAmount > 0) totalAmount + discountAmount else totalAmount
+                    Text("$%.2f".format(subtotalDisplay), style = MaterialTheme.typography.titleMedium, color = Color.White)
                 }
-            } else {
-                 Spacer(modifier = Modifier.height(8.dp))
-                 // Promo Code Input
-                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(if (showDetails) "Hide Details" else "Add Promo / Table #", style = MaterialTheme.typography.labelSmall, color = ElectricLime)
+                    Icon(
+                        if (showDetails) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = ElectricLime,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+
+            androidx.compose.animation.AnimatedVisibility(visible = showDetails) {
+                Column {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    if (discountAmount > 0) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Discount (${appliedPromoCode ?: ""}):", style = MaterialTheme.typography.bodySmall, color = ElectricLime)
+                            Text("-$%.2f".format(discountAmount), style = MaterialTheme.typography.bodySmall, color = ElectricLime)
+                        }
+                    } else {
+                        // Promo Code Input
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedTextField(
+                                value = promoCodeInput,
+                                onValueChange = { promoCodeInput = it },
+                                placeholder = { Text("Promo Code", color = Color.Gray, fontSize = 12.sp) },
+                                modifier = Modifier.weight(1f).height(48.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    cursorColor = ElectricLime,
+                                    focusedBorderColor = ElectricLime,
+                                    unfocusedBorderColor = Color.Gray
+                                ),
+                                singleLine = true,
+                                textStyle = MaterialTheme.typography.bodySmall
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Button(
+                                onClick = { onApplyPromoCode(promoCodeInput) },
+                                colors = ButtonDefaults.buttonColors(containerColor = ElectricLime),
+                                modifier = Modifier.height(48.dp),
+                                shape = RoundedCornerShape(4.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp)
+                            ) {
+                                Text("Apply", color = Color.Black, style = MaterialTheme.typography.labelLarge)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    // Customer Name
                     OutlinedTextField(
-                        value = promoCodeInput,
-                        onValueChange = { promoCodeInput = it },
-                        placeholder = { Text("Promo Code", color = Color.Gray) },
-                        modifier = Modifier.weight(1f).height(50.dp),
+                        value = customerName,
+                        onValueChange = { onCustomerNameChange(it) },
+                        label = { Text("Customer Name / Table #", color = Color.Gray, fontSize = 10.sp) },
+                        modifier = Modifier.fillMaxWidth().height(52.dp).testTag("customer_name_input"),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = Color.White,
                             unfocusedTextColor = Color.White,
@@ -992,78 +1040,58 @@ fun CartContent(
                             focusedBorderColor = ElectricLime,
                             unfocusedBorderColor = Color.Gray
                         ),
-                        singleLine = true
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.bodySmall
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = { onApplyPromoCode(promoCodeInput) },
-                        colors = ButtonDefaults.buttonColors(containerColor = ElectricLime),
-                        modifier = Modifier.height(50.dp),
-                        shape = RoundedCornerShape(4.dp)
-                    ) {
-                        Text("Apply", color = Color.Black)
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // Customer Name
-            OutlinedTextField(
-                value = customerName,
-                onValueChange = { onCustomerNameChange(it) },
-                label = { Text("Customer Name / Table #", color = Color.Gray) },
-                modifier = Modifier.fillMaxWidth().testTag("customer_name_input"),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    cursorColor = ElectricLime,
-                    focusedBorderColor = ElectricLime,
-                    unfocusedBorderColor = Color.Gray
-                ),
-                singleLine = true
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("Card Surcharge (1.6%):", style = MaterialTheme.typography.bodyLarge, color = Color.Gray)
-                Text("$%.2f".format(surcharge), style = MaterialTheme.typography.bodyLarge, color = Color.Gray)
-            }
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color.Gray)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("Card Total:", style = MaterialTheme.typography.titleLarge, color = Color.White)
-                Text("$%.2f".format(cardTotal), style = MaterialTheme.typography.titleLarge, color = ElectricLime)
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Buttons
-            Button(
-                onClick = { onPaymentSelected("CARD") },
-                colors = ButtonDefaults.buttonColors(containerColor = SafetyOrange),
-                modifier = Modifier.fillMaxWidth().height(56.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.ShoppingCart, contentDescription = null) 
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text("PAY CARD ($%.2f)".format(cardTotal), style = MaterialTheme.typography.titleMedium, color = Color.Black)
                 }
             }
             
             Spacer(modifier = Modifier.height(12.dp))
 
-            Button(
-                onClick = { onPaymentSelected("CASH") },
-                colors = ButtonDefaults.buttonColors(containerColor = ElectricLime),
-                modifier = Modifier.fillMaxWidth().height(56.dp).testTag("pay_cash_button")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("PAY CASH ($%.2f)".format(totalAmount), style = MaterialTheme.typography.titleMedium, color = Color.Black)
+                Text("Card Surcharge (1.6%):", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text("$%.2f".format(surcharge), style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            }
+            
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color.White.copy(alpha = 0.1f))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Card Total:", style = MaterialTheme.typography.titleLarge, color = Color.White)
+                Text("$%.2f".format(cardTotal), style = MaterialTheme.typography.headlineSmall, color = ElectricLime, fontWeight = FontWeight.ExtraBold)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Buttons
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Button(
+                    onClick = { onPaymentSelected("CARD") },
+                    colors = ButtonDefaults.buttonColors(containerColor = SafetyOrange),
+                    modifier = Modifier.weight(1f).height(50.dp),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Icon(Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp)) 
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("CARD", style = MaterialTheme.typography.titleMedium, color = Color.Black)
+                }
+                
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Button(
+                    onClick = { onPaymentSelected("CASH") },
+                    colors = ButtonDefaults.buttonColors(containerColor = ElectricLime),
+                    modifier = Modifier.weight(1f).height(50.dp).testTag("pay_cash_button"),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("CASH", style = MaterialTheme.typography.titleMedium, color = Color.Black)
+                }
             }
         }
     }
