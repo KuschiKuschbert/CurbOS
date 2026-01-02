@@ -528,7 +528,7 @@ class SalesViewModel @javax.inject.Inject constructor(
                         val newStampCards = updateStampCards(customer.stampCards, currentState.cartItems)
                         
                         // 5. Quests
-                        val newQuests = updateQuests(customer.activeQuests, currentState.cartItems)
+                        val newQuests = updateQuests(customer.activeQuests)
 
                         val updatedCustomer = customer.copy(
                             lifetimeMiles = newLifetime,
@@ -612,7 +612,7 @@ class SalesViewModel @javax.inject.Inject constructor(
         return newCards
     }
 
-    private fun updateQuests(activeQuests: List<com.curbos.pos.data.model.QuestProgress>, cartItems: List<CartItem>): List<com.curbos.pos.data.model.QuestProgress> {
+    private fun updateQuests(activeQuests: List<com.curbos.pos.data.model.QuestProgress>): List<com.curbos.pos.data.model.QuestProgress> {
         // Simple logic: if quest is "BUY_X" and target matches, increment.
         // For MVP, since we don't have the Quest Definition here easily (only ID), we might need to fetch Quests first or store definition in Progress.
         // Skipping complex Quest Logic for Phase 2 MVP - we will just preserve existing.
