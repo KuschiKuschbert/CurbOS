@@ -52,9 +52,6 @@ fun CustomerDirectoryScreen(
                     IconButton(onClick = onExport) {
                         Icon(Icons.Default.Share, contentDescription = "Export", tint = ElectricLime)
                     }
-                    IconButton(onClick = { viewModel.pushCustomersToCloud() }) {
-                        Icon(Icons.Default.CloudUpload, contentDescription = "Push to Cloud", tint = ElectricLime)
-                    }
                     IconButton(onClick = { viewModel.syncAllCustomers() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Sync", tint = ElectricLime)
                     }

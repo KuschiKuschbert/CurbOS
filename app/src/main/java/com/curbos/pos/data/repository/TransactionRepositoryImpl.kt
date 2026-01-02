@@ -227,6 +227,16 @@ class TransactionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun syncAllCustomers(): Result<Unit> {
+        // Bidirectional Sync: Push Local -> Pull Remote
+        
+        // 1. Push Local Snapshot
+        val pushResult = pushAllCustomers() 
+        if (pushResult is Result.Error) {
+             com.curbos.pos.common.Logger.e("TransactionRepo", "Push failed during sync: ${pushResult.message}")
+             // Continue to fetch anyway? Yes.
+        }
+
+        // 2. Fetch Remote
         val result = SupabaseManager.fetchAllCustomers()
         return if (result is Result.Success) {
             // Upsert remote customers to local (Merging)

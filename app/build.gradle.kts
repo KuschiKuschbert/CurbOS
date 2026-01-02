@@ -42,7 +42,8 @@ android {
         
         // Base version for CI parsing (Do not rename this variable without updating CI/CD scripts)
         // Base version for CI parsing (Do not rename this variable without updating CI/CD scripts)
-        val baseVersionName = "0.6.1"
+        // Base version for CI parsing (Do not rename this variable without updating CI/CD scripts)
+        val baseVersionName = "0.6.2"
         
         // Allow version name to be overridden by -PversionName
         versionName = if (project.hasProperty("versionName")) {

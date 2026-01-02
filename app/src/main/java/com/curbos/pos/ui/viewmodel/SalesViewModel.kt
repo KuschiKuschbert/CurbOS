@@ -329,7 +329,7 @@ class SalesViewModel @javax.inject.Inject constructor(
         launchCatching {
             val result = transactionRepository.syncAllCustomers()
             if (result is com.curbos.pos.common.Result.Success) {
-                com.curbos.pos.common.SnackbarManager.showSuccess("Customer database synced (Download)!")
+                com.curbos.pos.common.SnackbarManager.showSuccess("Customer database synced! ☁️")
             } else {
                 reportError("Sync failed: ${(result as com.curbos.pos.common.Result.Error).message}")
             }
