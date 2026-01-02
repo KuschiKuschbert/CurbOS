@@ -1057,6 +1057,21 @@ fun CartContent(
                     Spacer(modifier = Modifier.height(8.dp))
                     
                     // Customer Name
+                    if (selectedCustomer != null) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically, 
+                            modifier = Modifier.padding(bottom = 4.dp).clickable { onDatabaseClick() }
+                        ) {
+                            Icon(Icons.Default.CardGiftcard, null, tint = ElectricLime, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                "Member: ${selectedCustomer.currentRank} • ${selectedCustomer.redeemableMiles.toInt()} Miles", 
+                                color = ElectricLime, 
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                     OutlinedTextField(
                         value = customerName,
                         onValueChange = { onCustomerNameChange(it) },
