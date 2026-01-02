@@ -61,7 +61,7 @@ fun RewardsHubDialog(
                     containerColor = Color.Transparent,
                     contentColor = ElectricLime,
                     indicator = { tabPositions ->
-                        TabRowDefaults.Indicator(
+                        TabRowDefaults.SecondaryIndicator(
                             Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
                             color = ElectricLime
                         )
