@@ -141,4 +141,14 @@ interface PosDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertLoyaltyRewards(rewards: List<LoyaltyReward>)
+
+    // Quests
+    @Query("SELECT * FROM quests WHERE isActive = 1")
+    fun getActiveQuests(): Flow<List<com.curbos.pos.data.model.Quest>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertQuests(quests: List<com.curbos.pos.data.model.Quest>)
+
+    @Update
+    suspend fun updateQuest(quest: com.curbos.pos.data.model.Quest)
 }

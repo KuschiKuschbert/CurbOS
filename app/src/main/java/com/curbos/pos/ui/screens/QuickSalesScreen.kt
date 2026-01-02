@@ -544,15 +544,18 @@ fun QuickSalesScreen(
                 viewModel = viewModel,
                 onDismiss = { viewModel.hideLoyaltyDialog() }
             )
-        } else {
-            LoyaltyRewardsDialog(
-                customer = uiState.selectedCustomer!!,
-                rewards = uiState.loyaltyRewards,
-                onRedeem = { reward -> viewModel.redeemReward(reward) },
-                onApplyBonus = { action -> viewModel.applyBonusMiles(action) },
-                onDismiss = { viewModel.hideLoyaltyDialog() }
-            )
         }
+    }
+    
+    val customer = uiState.selectedCustomer
+    if (uiState.isLoyaltyDialogVisible && customer != null) {
+        RewardsHubDialog(
+            customer = customer,
+            rewards = uiState.loyaltyRewards,
+            onDismiss = { viewModel.toggleLoyaltyDialog(false) },
+            onRedeem = { viewModel.redeemReward(it) },
+            onApplyBonus = { viewModel.applyBonusMiles(it) }
+        )
     }
 
     // Scanner Dialog
@@ -1070,6 +1073,15 @@ fun CartContent(
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold
                             )
+                            if (selectedCustomer.streakCount > 1) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    "🔥 ${selectedCustomer.streakCount} Wk Streak", 
+                                    color = com.curbos.pos.ui.theme.SafetyOrange, 
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                     OutlinedTextField(

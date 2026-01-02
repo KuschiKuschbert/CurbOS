@@ -27,4 +27,24 @@ class Converters {
     fun toStringList(value: String): List<String> {
         return json.decodeFromString(value)
     }
+
+    @TypeConverter
+    fun fromStringIntMap(value: Map<String, Int>): String {
+        return json.encodeToString(value)
+    }
+
+    @TypeConverter
+    fun toStringIntMap(value: String): Map<String, Int> {
+        return json.decodeFromString(value)
+    }
+
+    @TypeConverter
+    fun fromQuestProgressList(value: List<com.curbos.pos.data.model.QuestProgress>): String {
+        return json.encodeToString(value)
+    }
+
+    @TypeConverter
+    fun toQuestProgressList(value: String): List<com.curbos.pos.data.model.QuestProgress> {
+        return json.decodeFromString(value)
+    }
 }

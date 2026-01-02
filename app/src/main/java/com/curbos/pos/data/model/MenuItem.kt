@@ -21,5 +21,8 @@ data class MenuItem(
     @kotlinx.serialization.SerialName("region")
     val region: String? = null,
     @kotlinx.serialization.SerialName("updated_at")
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
+    
+    @kotlinx.serialization.SerialName("required_rank")
+    val requiredRank: String? = null // For Secret Menu
 )

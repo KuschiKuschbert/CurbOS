@@ -126,8 +126,34 @@ class SalesViewModel @javax.inject.Inject constructor(
         WorkManager.getInstance(context).enqueue(syncRequest)
     }
 
-    val menuItems = posDao.getAllMenuItems()
+    // Raw Menu Items
+    private val allMenuItems = posDao.getAllMenuItems()
     val modifiers = posDao.getAllModifiers()
+    
+    // Filtered Items (Secret Menu Logic)
+    val menuItems: kotlinx.coroutines.flow.Flow<List<MenuItem>> = kotlinx.coroutines.flow.combine(
+        allMenuItems,
+        _uiState
+    ) { items, state ->
+        items.filter { item ->
+            val reqRank = item.requiredRank
+            if (reqRank == null) true // Public item
+            else {
+                // Secret Item! Check Customer Rank.
+                val customer = state.selectedCustomer
+                if (customer == null) false // Hidden for guests
+                else {
+                    // Check Rank Hierarchy
+                    val myRank = LoyaltyConstants.TacoRank.values().find { it.rankName == customer.currentRank }
+                    val required = LoyaltyConstants.TacoRank.values().find { it.rankName == reqRank }
+                    
+                    if (myRank != null && required != null) {
+                        myRank.minMiles >= required.minMiles
+                    } else false
+                }
+            }
+        }
+    }
 
     fun addToCart(item: MenuItem, selectedModifiers: List<com.curbos.pos.data.model.ModifierOption> = emptyList()) {
         _uiState.update { currentState ->
@@ -480,33 +506,44 @@ class SalesViewModel @javax.inject.Inject constructor(
                         ) 
                     }
                     
-                    // Update Customer Loyalty Points
+                    // Update Customer Loyalty Points & Advanced Features
                     currentState.selectedCustomer?.let { customer ->
                         val earned = transaction.totalAmount 
                         val redeemed = currentState.milesRedeemed
                         
-                        // Calculate new values
-                        // Calculate new values
+                        // 1. Core Points & Rank
                         val newLifetime = customer.lifetimeMiles + earned
-                        // Redeemable: Old - Redeemed + Earned
                         val newRedeemable = customer.redeemableMiles - redeemed + earned
-                        
-                        // Calculate Rank
                         val newRank = LoyaltyConstants.TacoRank.fromMiles(newLifetime).rankName
                         
-                        // Unlock Regions
+                        // 2. Region Unlocks
                         val regionsInOrder = currentState.cartItems.mapNotNull { it.menuItem.region }.distinct()
                         val newUnlockedRegions = (customer.unlockedRegions + regionsInOrder).distinct()
                         
+                        // 3. Hot Streaks (Weekly)
+                        val now = System.currentTimeMillis()
+                        val newStreak = calculateNewStreak(customer.lastVisit, now, customer.streakCount)
+                        
+                        // 4. Stamp Cards
+                        val newStampCards = updateStampCards(customer.stampCards, currentState.cartItems)
+                        
+                        // 5. Quests
+                        val newQuests = updateQuests(customer.activeQuests, currentState.cartItems)
+
                         val updatedCustomer = customer.copy(
                             lifetimeMiles = newLifetime,
                             redeemableMiles = newRedeemable,
                             currentRank = newRank,
-                            unlockedRegions = newUnlockedRegions
+                            unlockedRegions = newUnlockedRegions,
+                            lastVisit = now,
+                            streakCount = newStreak,
+                            stampCards = newStampCards,
+                            activeQuests = newQuests
                         )
-                        com.curbos.pos.common.Logger.d("SalesViewModel", "Updating Customer: Rank=$newRank, Regions=$newUnlockedRegions")
+                        com.curbos.pos.common.Logger.d("SalesViewModel", "Loyalty Update: Streak=$newStreak, Stamps=$newStampCards")
                         launchCatching {
                             transactionRepository.createOrUpdateCustomer(updatedCustomer)
+                            checkQuestCompletions(newQuests) // Notify user if quest completed
                         }
                     }
                 }
@@ -536,5 +573,56 @@ class SalesViewModel @javax.inject.Inject constructor(
     
     fun reopenTransaction(transactionId: String) {
         _uiState.update { it.copy(lastTransactionId = transactionId) }
+    }
+
+    // --- Advanced Loyalty Logic ---
+
+    private fun calculateNewStreak(lastVisit: Long, now: Long, currentStreak: Int): Int {
+        if (lastVisit == 0L) return 1
+        
+        val calLast = java.util.Calendar.getInstance().apply { timeInMillis = lastVisit }
+        val calNow = java.util.Calendar.getInstance().apply { timeInMillis = now }
+        
+        val lastWeek = calLast.get(java.util.Calendar.WEEK_OF_YEAR)
+        val currentWeek = calNow.get(java.util.Calendar.WEEK_OF_YEAR)
+        val lastYear = calLast.get(java.util.Calendar.YEAR)
+        val currentYear = calNow.get(java.util.Calendar.YEAR)
+        
+        // Same week? No change.
+        if (lastYear == currentYear && lastWeek == currentWeek) return currentStreak
+        
+        // Previous week? Increment.
+        // TODO: Handle year boundary properly (Week 52 -> Week 1)
+        val isConsecutive = (currentYear == lastYear && currentWeek == lastWeek + 1) ||
+                            (currentYear == lastYear + 1 && currentWeek == 1 && (lastWeek == 52 || lastWeek == 53))
+                            
+        return if (isConsecutive) currentStreak + 1 else 1
+    }
+
+    private fun updateStampCards(currentCards: Map<String, Int>, cartItems: List<CartItem>): Map<String, Int> {
+        val newCards = currentCards.toMutableMap()
+        
+        cartItems.forEach { item ->
+            // Assume Category is the key
+            val category = item.menuItem.category
+            // Only counting certain categories for now? Lets count all.
+            val currentCount = newCards[category] ?: 0
+            newCards[category] = currentCount + 1
+        }
+        return newCards
+    }
+
+    private fun updateQuests(activeQuests: List<com.curbos.pos.data.model.QuestProgress>, cartItems: List<CartItem>): List<com.curbos.pos.data.model.QuestProgress> {
+        // Simple logic: if quest is "BUY_X" and target matches, increment.
+        // For MVP, since we don't have the Quest Definition here easily (only ID), we might need to fetch Quests first or store definition in Progress.
+        // Skipping complex Quest Logic for Phase 2 MVP - we will just preserve existing.
+        return activeQuests 
+    }
+    
+    private suspend fun checkQuestCompletions(quests: List<com.curbos.pos.data.model.QuestProgress>) {
+        val completed = quests.filter { it.isCompleted } // If we tracked 'just completed'
+        if (completed.isNotEmpty()) {
+             com.curbos.pos.common.SnackbarManager.showSuccess("Quest Completed! 🎯")
+        }
     }
 }

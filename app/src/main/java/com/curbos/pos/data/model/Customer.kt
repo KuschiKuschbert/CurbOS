@@ -25,5 +25,25 @@ data class Customer(
     @SerialName("zip_code")
     val zipCode: String? = null,
     @SerialName("unlocked_regions")
-    val unlockedRegions: List<String> = emptyList()
+    val unlockedRegions: List<String> = emptyList(),
+    
+    // --- New Loyalty Fields ---
+    @SerialName("streak_count")
+    val streakCount: Int = 0,
+    
+    @SerialName("last_visit")
+    val lastVisit: Long = 0L,
+    
+    @SerialName("stamp_cards")
+    val stampCards: Map<String, Int> = emptyMap(), // Category -> Count
+    
+    @SerialName("active_quests")
+    val activeQuests: List<QuestProgress> = emptyList()
+)
+
+@Serializable
+data class QuestProgress(
+    @SerialName("quest_id") val questId: String,
+    @SerialName("current_value") val currentValue: Int,
+    @SerialName("is_completed") val isCompleted: Boolean = false
 )
