@@ -572,6 +572,16 @@ object SupabaseManager {
         }
     }
 
+    suspend fun upsertCustomers(customers: List<Customer>): com.curbos.pos.common.Result<Unit> {
+        return try {
+            client.postgrest["customers"].upsert(customers)
+            com.curbos.pos.common.Result.Success(Unit)
+        } catch (e: Exception) {
+            com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to batch upsert customers", e)
+            com.curbos.pos.common.Result.Error(e, "Failed to batch upsert customers: ${e.localizedMessage}")
+        }
+    }
+
     suspend fun fetchRewards(): com.curbos.pos.common.Result<List<LoyaltyReward>> {
         return try {
             val items = client.postgrest["loyalty_rewards"]

@@ -27,4 +27,5 @@ interface TransactionRepository {
     fun getAllCustomers(): Flow<List<Customer>>
     fun searchCustomers(query: String): Flow<List<Customer>>
     suspend fun syncAllCustomers(): Result<Unit>
+    suspend fun pushAllCustomers(): Result<Unit>
 }

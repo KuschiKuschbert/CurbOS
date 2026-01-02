@@ -8,9 +8,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,6 +33,7 @@ fun CustomerDirectoryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
+    var selectedCustomer by remember { mutableStateOf<com.curbos.pos.data.model.Customer?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.syncAllCustomers()
@@ -48,6 +51,9 @@ fun CustomerDirectoryScreen(
                 actions = {
                     IconButton(onClick = onExport) {
                         Icon(Icons.Default.Share, contentDescription = "Export", tint = ElectricLime)
+                    }
+                    IconButton(onClick = { viewModel.pushCustomersToCloud() }) {
+                        Icon(Icons.Default.CloudUpload, contentDescription = "Push to Cloud", tint = ElectricLime)
                     }
                     IconButton(onClick = { viewModel.syncAllCustomers() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Sync", tint = ElectricLime)
@@ -102,7 +108,9 @@ fun CustomerDirectoryScreen(
             ) {
                 items(uiState.allCustomers) { customer ->
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedCustomer = customer },
                         colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E))
                     ) {
                         Row(
@@ -151,5 +159,15 @@ fun CustomerDirectoryScreen(
                 }
             }
         }
+    }
+    
+    if (selectedCustomer != null) {
+        RewardsHubDialog(
+            customer = selectedCustomer!!,
+            rewards = uiState.loyaltyRewards,
+            onDismiss = { selectedCustomer = null },
+            onRedeem = { /* View Only in Admin */ },
+            onApplyBonus = { /* View Only in Admin */ }
+        )
     }
 }

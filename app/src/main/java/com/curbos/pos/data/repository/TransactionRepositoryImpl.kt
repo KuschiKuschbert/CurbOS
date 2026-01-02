@@ -229,12 +229,24 @@ class TransactionRepositoryImpl @Inject constructor(
     override suspend fun syncAllCustomers(): Result<Unit> {
         val result = SupabaseManager.fetchAllCustomers()
         return if (result is Result.Success) {
-            posDao.insertMenuItems(emptyList()) // Placeholder? No, I need insertCustomers. Wait, did I add insertCustomers? I have insertMenuItems. 
-            // Let me check PosDao for insertCustomers (bulk).
+            // Upsert remote customers to local (Merging)
             result.data.forEach { posDao.insertCustomer(it) }
             Result.Success(Unit)
         } else {
             Result.Error((result as Result.Error).exception, result.message)
+        }
+    }
+
+    override suspend fun pushAllCustomers(): Result<Unit> {
+        return try {
+            val localCustomers = posDao.getCustomerList() // Snapshot
+            if (localCustomers.isNotEmpty()) {
+                SupabaseManager.upsertCustomers(localCustomers)
+            } else {
+                Result.Success(Unit) // Nothing to push
+            }
+        } catch (e: Exception) {
+            Result.Error(e, "Failed to push customers: ${e.message}")
         }
     }
 }

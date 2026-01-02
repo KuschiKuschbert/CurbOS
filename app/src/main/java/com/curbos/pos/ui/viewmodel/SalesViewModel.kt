@@ -329,9 +329,20 @@ class SalesViewModel @javax.inject.Inject constructor(
         launchCatching {
             val result = transactionRepository.syncAllCustomers()
             if (result is com.curbos.pos.common.Result.Success) {
-                com.curbos.pos.common.SnackbarManager.showSuccess("Customer database synced!")
+                com.curbos.pos.common.SnackbarManager.showSuccess("Customer database synced (Download)!")
             } else {
                 reportError("Sync failed: ${(result as com.curbos.pos.common.Result.Error).message}")
+            }
+        }
+    }
+
+    fun pushCustomersToCloud() {
+        launchCatching {
+            val result = transactionRepository.pushAllCustomers()
+            if (result is com.curbos.pos.common.Result.Success) {
+                com.curbos.pos.common.SnackbarManager.showSuccess("All Customers Uploaded to Cloud! ☁️")
+            } else {
+                reportError("Upload failed: ${(result as com.curbos.pos.common.Result.Error).message}")
             }
         }
     }
