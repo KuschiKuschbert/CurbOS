@@ -40,30 +40,23 @@ class UpdateManager @Inject constructor(
         try {
             // Fetch release
             val release = if (isDevMode) {
-                 githubService.getReleaseByTag("KuschiKuschbert", "CurbOS", "dev")
+                 // For Dev Mode, we want the ABSOLUTE LATEST release (including pre-releases)
+                 // getLatestRelease ONLY returns "stable" (non-prerelease).
+                 // So we fetch the list and take the first one.
+                 val releases = githubService.getReleases("KuschiKuschbert", "CurbOS")
+                 releases.firstOrNull()
             } else {
                  githubService.getLatestRelease("KuschiKuschbert", "CurbOS")
             }
             
+            if (release == null) return@withContext null
+
             val remoteVersion = release.tagName.removePrefix("v")
             val currentVersion = BuildConfig.VERSION_NAME.removePrefix("v")
 
-            if (isDevMode) {
-                // Parse timestamps for dev builds
-                val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
-                sdf.timeZone = TimeZone.getTimeZone("UTC")
-                
-                val releaseDate = sdf.parse(release.publishedAt)?.time ?: 0L
-                val installDate = context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime
-                
-                // Add buffer (e.g. 5 mins) to avoid clock skew issues
-                if (releaseDate > installDate + 300_000) {
-                    return@withContext release
-                }
-                return@withContext null
-            }
+            Logger.d("UpdateManager", "Checking Update: Current=$currentVersion vs Remote=$remoteVersion (DevMode=$isDevMode)")
 
-            // Proper SemVer Comparison for Prod
+            // Logic: Compare Versions Semantically
             if (isUpdateNewer(currentVersion, remoteVersion)) {
                 return@withContext release
             }
@@ -77,18 +70,46 @@ class UpdateManager @Inject constructor(
 
     private fun isUpdateNewer(current: String, remote: String): Boolean {
         try {
-            val currentParts = current.split(".").map { it.toIntOrNull() ?: 0 }
-            val remoteParts = remote.split(".").map { it.toIntOrNull() ?: 0 }
+            // Split into [0.5.0, dev28]
+            val currentParts = current.split("-")
+            val remoteParts = remote.split("-")
             
-            val length = maxOf(currentParts.size, remoteParts.size)
+            val currentBase = currentParts[0].split(".").map { it.toIntOrNull() ?: 0 }
+            val remoteBase = remoteParts[0].split(".").map { it.toIntOrNull() ?: 0 }
+            
+            // 1. Compare Base Versions (0.5.0 vs 0.5.1)
+            val length = maxOf(currentBase.size, remoteBase.size)
             for (i in 0 until length) {
-                val c = currentParts.getOrElse(i) { 0 }
-                val r = remoteParts.getOrElse(i) { 0 }
-                if (r > c) return true
-                if (r < c) return false
+                val c = currentBase.getOrElse(i) { 0 }
+                val r = remoteBase.getOrElse(i) { 0 }
+                if (r > c) return true // Remote is Newer
+                if (r < c) return false // Remote is Older
             }
+
+            // 2. Compare Suffixes (if bases are equal)
+            // Rule: No Suffix (Stable) > Suffix (Pre-release)
+            // 0.5.0 > 0.5.0-dev28
+            
+            if (currentParts.size == 1 && remoteParts.size > 1) return false // Current is Stable, Remote is Dev -> No Update (unless base was newer)
+            if (currentParts.size > 1 && remoteParts.size == 1) return true  // Current is Dev, Remote is Stable -> Update!
+
+            // Both have suffixes (or both don't)
+            if (currentParts.size > 1 && remoteParts.size > 1) {
+                val currentSuffix = currentParts[1] // dev28
+                val remoteSuffix = remoteParts[1]   // dev30
+                
+                // Simple string compare is dangerous (dev100 < dev20 lexically?). 
+                // Extract numbers.
+                val currentNum = currentSuffix.filter { it.isDigit() }.toIntOrNull() ?: 0
+                val remoteNum = remoteSuffix.filter { it.isDigit() }.toIntOrNull() ?: 0
+                
+                if (remoteNum > currentNum) return true
+            }
+            
+            return false
+            
         } catch (e: Exception) {
-            Logger.e("UpdateManager", "Version parse error", e)
+            Logger.e("UpdateManager", "Version parse error: Current=$current vs Remote=$remote", e)
         }
         return false // Default to no update if error or equal
     }
