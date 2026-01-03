@@ -315,9 +315,7 @@ object SupabaseManager {
              e.printStackTrace()
         }
     }
-    suspend fun wipeAllData(): com.curbos.pos.common.Result<Unit> {
-        return try {
-            // Delete modifiers first due to FK constraints if any (though currently none enforced strictly, safer)
+
     suspend fun wipeAllData(): com.curbos.pos.common.Result<Unit> {
         return try {
             // Delete modifiers first due to FK constraints if any (though currently none enforced strictly, safer)
