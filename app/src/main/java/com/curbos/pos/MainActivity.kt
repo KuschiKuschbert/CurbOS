@@ -101,10 +101,12 @@ class MainActivity : AppCompatActivity() {
                 // Adaptive UI
                 val windowSizeClass = calculateWindowSizeClass(this)
 
-                // Initialize Data Seeder
-                LaunchedEffect(Unit) {
-                    com.curbos.pos.data.DataSeeder(posDao).seedDataIfEmpty()
-                }
+                // Initialize DataSeeder (Disabled for all builds per user request)
+                // LaunchedEffect(Unit) {
+                //    if (BuildConfig.DEBUG) {
+                //        com.curbos.pos.data.DataSeeder(posDao).seedDataIfEmpty()
+                //    }
+                // }
                 
                 // p2pManager is injected
                 
