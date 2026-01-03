@@ -44,7 +44,7 @@ android {
         // Base version for CI parsing (Do not rename this variable without updating CI/CD scripts)
         // Base version for CI parsing (Do not rename this variable without updating CI/CD scripts)
         // Base version for CI parsing (Do not rename this variable without updating CI/CD scripts)
-        val baseVersionName = "0.6.4"
+        val baseVersionName = "0.6.5"
         
         // Allow version name to be overridden by -PversionName
         versionName = if (project.hasProperty("versionName")) {
@@ -72,12 +72,13 @@ android {
             localProperties.load(FileInputStream(localPropertiesFile))
         }
 
-        // val supabaseUrl = System.getenv("SUPABASE_URL") ?: localProperties.getProperty("SUPABASE_URL") ?: ""
-        // val supabaseKey = System.getenv("SUPABASE_KEY") ?: localProperties.getProperty("SUPABASE_KEY") ?: ""
-        
-        // HARDCODED FIX for v0.6.4 Hotfix 2 due to local.properties resolution issues
-        val supabaseUrl = "https://dulkrqgjfohsuxhsmofo.supabase.co"
-        val supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1bGtycWdqZm9oc3V4aHNtb2ZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5NzYwMDMsImV4cCI6MjA3MjU1MjAwM30.b_P98mAantymNfWy1Qz18SaR-LwrPjuaebO2Uj_5JK8"
+        val supabaseUrl = System.getenv("SUPABASE_URL") ?: localProperties.getProperty("SUPABASE_URL")
+        val supabaseKey = System.getenv("SUPABASE_KEY") ?: localProperties.getProperty("SUPABASE_KEY")
+
+        if (supabaseUrl.isNullOrBlank() || supabaseKey.isNullOrBlank()) {
+            // Fail fast during build if configuration is missing
+            throw GradleException("Supabase Config Missing! Please set SUPABASE_URL and SUPABASE_KEY in local.properties or Environment Variables.")
+        }
 
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_KEY", "\"$supabaseKey\"")
