@@ -85,7 +85,9 @@ import java.util.concurrent.Executors
 import kotlinx.coroutines.launch
 
 private fun shareCustomerCard(context: android.content.Context, customer: Customer) {
-    val bitmap = com.curbos.pos.util.QRCodeGenerator.generateQRCode(customer.id) ?: return
+    // Generate QR with full Passport URL for customer scanning
+    val passportUrl = "https://prepflow.org/curbos/quests/${customer.id}"
+    val bitmap = com.curbos.pos.util.QRCodeGenerator.generateQRCode(passportUrl) ?: return
     
     // Save to cache and share
     try {

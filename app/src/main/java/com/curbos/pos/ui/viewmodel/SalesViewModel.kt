@@ -290,8 +290,15 @@ class SalesViewModel @javax.inject.Inject constructor(
         }
     }
 
-    fun attachCustomerById(id: String) {
+    fun attachCustomerById(input: String) {
         launchCatching {
+            // Handle Passport URLs (e.g. https://prepflow.org/curbos/quests/UUID)
+            val id = if (input.contains("/curbos/quests/")) {
+                input.substringAfterLast("/")
+            } else {
+                input
+            }
+
             val result = transactionRepository.getCustomerById(id)
             if (result is com.curbos.pos.common.Result.Success) {
                 val customer = result.data
