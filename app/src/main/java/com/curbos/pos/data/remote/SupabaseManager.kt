@@ -137,7 +137,7 @@ object SupabaseManager {
             
             // Try fetching from 'users'
             val user = try {
-                client.postgrest["users"]
+                client.postgrest["pos_customers"] // Renamed from users/customers collision check
                     .select {
                         filter {
                             eq("email", email)
@@ -174,7 +174,7 @@ object SupabaseManager {
 
     suspend fun fetchMenuItems(): com.curbos.pos.common.Result<List<MenuItem>> {
         return try {
-            val items = client.postgrest["menu_items"]
+            val items = client.postgrest["pos_menu_items"]
                 .select()
                 .decodeList<MenuItem>()
             com.curbos.pos.common.Result.Success(items)
@@ -186,7 +186,7 @@ object SupabaseManager {
 
     suspend fun fetchModifiers(): com.curbos.pos.common.Result<List<com.curbos.pos.data.model.ModifierOption>> {
         return try {
-            val items = client.postgrest["modifier_options"]
+            val items = client.postgrest["pos_modifier_options"]
                 .select()
                 .decodeList<com.curbos.pos.data.model.ModifierOption>()
             com.curbos.pos.common.Result.Success(items)
@@ -209,7 +209,7 @@ object SupabaseManager {
 
     suspend fun upsertMenuItem(item: MenuItem): com.curbos.pos.common.Result<Unit> {
         return try {
-            client.postgrest["menu_items"].upsert(item, onConflict = "id")
+            client.postgrest["pos_menu_items"].upsert(item, onConflict = "id")
             com.curbos.pos.common.Result.Success(Unit)
         } catch (e: Exception) {
             com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to sync menu item", e)
@@ -219,7 +219,7 @@ object SupabaseManager {
 
     suspend fun deleteMenuItem(id: String): com.curbos.pos.common.Result<Unit> {
         return try {
-            client.postgrest["menu_items"].delete {
+            client.postgrest["pos_menu_items"].delete {
                 filter {
                     eq("id", id)
                 }
@@ -233,7 +233,7 @@ object SupabaseManager {
 
     suspend fun deleteItemsByCategory(category: String): com.curbos.pos.common.Result<Unit> {
         return try {
-            client.postgrest["menu_items"].delete {
+            client.postgrest["pos_menu_items"].delete {
                 filter {
                      eq("category", category)
                 }
@@ -247,7 +247,7 @@ object SupabaseManager {
 
     suspend fun updateCategoryName(oldName: String, newName: String): com.curbos.pos.common.Result<Unit> {
         return try {
-            client.postgrest["menu_items"].update({
+            client.postgrest["pos_menu_items"].update({
                 set("category", newName)
             }) {
                 filter {
@@ -263,7 +263,7 @@ object SupabaseManager {
 
     suspend fun upsertModifier(modifier: com.curbos.pos.data.model.ModifierOption): com.curbos.pos.common.Result<Unit> {
         return try {
-            client.postgrest["modifier_options"].upsert(modifier, onConflict = "id")
+            client.postgrest["pos_modifier_options"].upsert(modifier, onConflict = "id")
             com.curbos.pos.common.Result.Success(Unit)
         } catch (e: Exception) {
             com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to sync modifier", e)
@@ -273,7 +273,7 @@ object SupabaseManager {
 
     suspend fun deleteModifier(id: String): com.curbos.pos.common.Result<Unit> {
         return try {
-            client.postgrest["modifier_options"].delete {
+            client.postgrest["pos_modifier_options"].delete {
                 filter {
                     eq("id", id)
                 }
@@ -289,7 +289,7 @@ object SupabaseManager {
         try {
             val channel = client.realtime.channel("menu-cal")
             val changes = channel.postgresChangeFlow<io.github.jan.supabase.realtime.PostgresAction>(schema = "public") {
-                table = "menu_items"
+                table = "pos_menu_items"
             }
             safeSubscribe(channel)
             changes.collect {
@@ -305,7 +305,7 @@ object SupabaseManager {
         try {
             val channel = client.realtime.channel("modifiers-cal")
             val changes = channel.postgresChangeFlow<io.github.jan.supabase.realtime.PostgresAction>(schema = "public") {
-                table = "modifier_options"
+                table = "pos_modifier_options"
             }
             safeSubscribe(channel)
             changes.collect {
@@ -318,12 +318,15 @@ object SupabaseManager {
     suspend fun wipeAllData(): com.curbos.pos.common.Result<Unit> {
         return try {
             // Delete modifiers first due to FK constraints if any (though currently none enforced strictly, safer)
-            client.postgrest["modifier_options"].delete {
+    suspend fun wipeAllData(): com.curbos.pos.common.Result<Unit> {
+        return try {
+            // Delete modifiers first due to FK constraints if any (though currently none enforced strictly, safer)
+            client.postgrest["pos_modifier_options"].delete {
                 filter {
                     neq("id", "00000000-0000-0000-0000-000000000000") // Delete all
                 }
             }
-            client.postgrest["menu_items"].delete {
+            client.postgrest["pos_menu_items"].delete {
                 filter {
                     neq("id", "00000000-0000-0000-0000-000000000000") // Delete all
                 }
@@ -347,7 +350,7 @@ object SupabaseManager {
                 MenuItem(id = java.util.UUID.randomUUID().toString(), name = "CurbOS Cap", category = "Merch", price = 25.00, taxRate = 0.1, isAvailable = true, imageUrl = null),
                 MenuItem(id = java.util.UUID.randomUUID().toString(), name = "Spicy Sauce Bottle", category = "Merch", price = 12.00, taxRate = 0.1, isAvailable = true, imageUrl = null)
             )
-            client.postgrest["menu_items"].insert(initialItems)
+            client.postgrest["pos_menu_items"].insert(initialItems)
             com.curbos.pos.common.Result.Success(Unit)
         } catch (e: Exception) {
             com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to seed data", e)
@@ -512,7 +515,7 @@ object SupabaseManager {
     // Loyalty
     suspend fun fetchCustomer(phone: String): com.curbos.pos.common.Result<Customer?> {
         return try {
-            val items = client.postgrest["customers"]
+            val items = client.postgrest["pos_customers"]
                 .select {
                     filter {
                         eq("phone_number", phone)
@@ -530,7 +533,7 @@ object SupabaseManager {
 
     suspend fun fetchCustomerById(id: String): com.curbos.pos.common.Result<Customer?> {
         return try {
-            val items = client.postgrest["customers"]
+            val items = client.postgrest["pos_customers"]
                 .select {
                     filter {
                         eq("id", id)
@@ -548,7 +551,7 @@ object SupabaseManager {
 
     suspend fun fetchAllCustomers(): com.curbos.pos.common.Result<List<Customer>> {
         return try {
-            val items = client.postgrest["customers"]
+            val items = client.postgrest["pos_customers"]
                 .select()
                 .decodeList<Customer>()
             
@@ -561,7 +564,7 @@ object SupabaseManager {
 
     suspend fun upsertCustomer(customer: Customer): com.curbos.pos.common.Result<Customer> {
         return try {
-            val result = client.postgrest["customers"]
+            val result = client.postgrest["pos_customers"]
                 .upsert(customer) {
                     select() // Return the inserted item to get generated ID or updated fields
                 }
@@ -576,7 +579,7 @@ object SupabaseManager {
 
     suspend fun upsertCustomers(customers: List<Customer>): com.curbos.pos.common.Result<Unit> {
         return try {
-            client.postgrest["customers"].upsert(customers)
+            client.postgrest["pos_customers"].upsert(customers)
             com.curbos.pos.common.Result.Success(Unit)
         } catch (e: Exception) {
             com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to batch upsert customers", e)
