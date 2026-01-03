@@ -62,6 +62,8 @@ object SupabaseManager {
             install(Postgrest)
             install(Realtime)
             install(Auth)
+            
+            com.curbos.pos.common.Logger.d("SupabaseManager", "Initializing Supabase Client with URL: ${BuildConfig.SUPABASE_URL}")
         }
     }
 
