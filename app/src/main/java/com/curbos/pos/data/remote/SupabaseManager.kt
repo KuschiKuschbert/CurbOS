@@ -155,54 +155,24 @@ object SupabaseManager {
     }
 
 
-    // Auth0 Login (Exchange ID Token)
+    // Auth0 Login (Native Supabase Integration)
     suspend fun signInWithAuth0(idToken: String): com.curbos.pos.common.Result<Boolean> {
-        return withContext(Dispatchers.IO) { // Switch to IO thread for blocking network calls
+        return withContext(Dispatchers.IO) {
             try {
-                com.curbos.pos.common.Logger.d("SupabaseManager", "Exchange Auth0 Token for Supabase Session (Custom API)...")
+                com.curbos.pos.common.Logger.d("SupabaseManager", "Native Supabase Sign-In with Auth0 ID Token...")
 
-                // Call our Custom Next.js API to exchange tokens (Bypassing Supabase "Auth0 Provider" issues)
-                val url = java.net.URL("https://prepflow.org/api/curbos/auth/exchange-token")
-                val connection = (url.openConnection() as java.net.HttpURLConnection).apply {
-                    requestMethod = "POST"
-                    setRequestProperty("Content-Type", "application/json")
-                    // No need for Supabase Key here, it's a public wrapper API
-                    doOutput = true
+                // Use the native Supabase Auth provider for ID Tokens (Professional Way)
+                // This allows Supabase to verify the token against the configured Auth0 JWKS
+                // and manage the session/refresh natively.
+                client.auth.signInWith(IDToken) {
+                    this.idToken = idToken
                 }
 
-                // Construct JSON Payload
-                // API expects { "idToken": "..." }
-                val jsonPayload = """
-                    {
-                        "idToken": "$idToken"
-                    }
-                """.trimIndent()
-
-                connection.outputStream.use { os ->
-                    val input = jsonPayload.toByteArray(java.nio.charset.StandardCharsets.UTF_8)
-                    os.write(input, 0, input.size)
-                }
-
-                val responseCode = connection.responseCode
-                if (responseCode in 200..299) {
-                    val response = connection.inputStream.bufferedReader().use { it.readText() }
-
-                    // Decode the UserSession from the JSON response
-                    val session = Json { ignoreUnknownKeys = true }.decodeFromString<UserSession>(response)
-
-                    // Import the session into the Supabase Client
-                    client.auth.importSession(session)
-
-                    com.curbos.pos.common.Logger.d("SupabaseManager", "Supabase Session Established & Persisted via Import!")
-                    com.curbos.pos.common.Result.Success(true)
-                } else {
-                    val errorResponse = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "Unknown Error"
-                    com.curbos.pos.common.Logger.e("SupabaseManager", "Supabase Custom Sign-In failed: $responseCode - $errorResponse")
-                    com.curbos.pos.common.Result.Error(Exception("HTTP $responseCode"), "Sign-In Failed: $errorResponse")
-                }
+                com.curbos.pos.common.Logger.d("SupabaseManager", "Supabase Session Established natively!")
+                com.curbos.pos.common.Result.Success(true)
             } catch (e: Exception) {
-                com.curbos.pos.common.Logger.e("SupabaseManager", "Supabase Sign-In Exception", e)
-                com.curbos.pos.common.Result.Error(e, "Supabase Sign-In failed: ${e.localizedMessage}")
+                com.curbos.pos.common.Logger.e("SupabaseManager", "Supabase Native Sign-In failed", e)
+                com.curbos.pos.common.Result.Error(e, "Native Sign-In failed: ${e.localizedMessage}")
             }
         }
     }
