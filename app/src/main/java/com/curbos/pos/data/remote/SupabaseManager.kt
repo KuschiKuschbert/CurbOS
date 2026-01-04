@@ -34,6 +34,16 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import io.github.jan.supabase.gotrue.SessionStatus
 import io.github.jan.supabase.gotrue.providers.builtin.IDToken
+import io.ktor.client.HttpClient
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.request.header
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 object SupabaseManager {
 
@@ -156,20 +166,36 @@ object SupabaseManager {
 
 
     // Auth0 Login (Native Supabase Integration)
+    // We manually call the GoTrue /token endpoint because the SDK's IDToken provider 
+    // is missing fields for custom OIDC providers like Auth0.
     suspend fun signInWithAuth0(idToken: String): com.curbos.pos.common.Result<Boolean> {
         return withContext(Dispatchers.IO) {
             try {
                 com.curbos.pos.common.Logger.d("SupabaseManager", "Native Supabase Sign-In with Auth0 ID Token...")
 
-                // Use the native Supabase Auth provider for ID Tokens (Professional Way)
-                // This allows Supabase to verify the token against the configured Auth0 JWKS
-                // and manage the session/refresh natively.
-                client.auth.signInWith(IDToken) {
-                    this.idToken = idToken
+                val httpClient = HttpClient(CIO)
+                val response = httpClient.post("${SUPABASE_URL}/auth/v1/token?grant_type=id_token") {
+                    header("apikey", SUPABASE_KEY)
+                    header("Authorization", "Bearer $SUPABASE_KEY")
+                    contentType(ContentType.Application.Json)
+                    setBody(buildJsonObject {
+                        put("id_token", idToken)
+                        put("provider", "auth0")
+                        put("client_id", "CO3Vl37SuZ4e9wke1PitgWvAUyMR2HfL")
+                        put("issuer", "https://auth.prepflow.org/")
+                    })
                 }
 
-                com.curbos.pos.common.Logger.d("SupabaseManager", "Supabase Session Established natively!")
-                com.curbos.pos.common.Result.Success(true)
+                val bodyText = response.bodyAsText()
+                if (response.status.value in 200..299) {
+                    val session = Json { ignoreUnknownKeys = true }.decodeFromString<UserSession>(bodyText)
+                    client.auth.importSession(session)
+                    com.curbos.pos.common.Logger.d("SupabaseManager", "Supabase Session Established natively!")
+                    com.curbos.pos.common.Result.Success(true)
+                } else {
+                    com.curbos.pos.common.Logger.e("SupabaseManager", "Token Exchange Failed: $bodyText")
+                    com.curbos.pos.common.Result.Error(Exception(bodyText), "Token Exchange failed: $bodyText")
+                }
             } catch (e: Exception) {
                 com.curbos.pos.common.Logger.e("SupabaseManager", "Supabase Native Sign-In failed", e)
                 com.curbos.pos.common.Result.Error(e, "Native Sign-In failed: ${e.localizedMessage}")
