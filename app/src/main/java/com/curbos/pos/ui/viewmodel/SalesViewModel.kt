@@ -372,6 +372,7 @@ class SalesViewModel @javax.inject.Inject constructor(
              _uiState.update { 
                  it.copy(
                      discountAmount = minOf(newDiscount, subtotal),
+                     totalAmount = subtotal - minOf(newDiscount, subtotal),
                      milesRedeemed = it.milesRedeemed + reward.costMiles,
                      isLoyaltyDialogVisible = false
                  )

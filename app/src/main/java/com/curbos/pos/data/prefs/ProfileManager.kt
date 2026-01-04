@@ -114,4 +114,12 @@ class ProfileManager(context: Context) {
     fun isDeveloperMode(): Boolean {
         return prefs.getBoolean("developer_mode", false)
     }
+
+    fun saveLastMenuSyncTime(timestamp: String) {
+        prefs.edit().putString("last_menu_sync_timestamp", timestamp).apply()
+    }
+
+    fun getLastMenuSyncTime(): String {
+        return prefs.getString("last_menu_sync_timestamp", "1970-01-01T00:00:00Z") ?: "1970-01-01T00:00:00Z"
+    }
 }

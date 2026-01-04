@@ -26,99 +26,106 @@ class EndToEndFlowTest {
     )
 
     private fun ensureLoggedIn(device: UiDevice) {
-        val timeout = 10000L
-        println("E2E: Checking for Update Dialog...")
+        val startTime = System.currentTimeMillis()
+        val maxWaitTime = 60000L // 60 seconds total timeout
         
-        // --- HANDLE UPDATE DIALOG ---
-        println("E2E: Checking for Update Dialog...")
-        // Look for "Update Now" button directly (Case insensitive)
-        val updateNowPattern = java.util.regex.Pattern.compile("(?i)update now")
-        val updateNowBtn = device.wait(Until.findObject(By.text(updateNowPattern)), 5000)
+        println("E2E: ensureLoggedIn - Starting Navigation Loop (Max 60s)")
+
+        while (System.currentTimeMillis() - startTime < maxWaitTime) {
+            // 1. Check for Success (Sales Screen)
+            if (device.hasObject(By.text("Sales"))) {
+                println("E2E: ✅ Reached Sales Screen!")
+                return
+            }
+
+            // 2. Handle 'Android app compatibility' Dialog
+            val compatPattern = java.util.regex.Pattern.compile("(?i)(Android app compatibility|ELF alignment)")
+            if (device.hasObject(By.text(compatPattern))) {
+                println("E2E: Found Compatibility Dialog.")
+                
+                val dontShow = device.findObject(By.text("Don't show again"))
+                if (dontShow != null) {
+                    println("E2E: Clicking 'Don't show again'")
+                    dontShow.click()
+                }
+
+                val okBtn = device.findObject(By.text("OK")) ?: device.findObject(By.text("Close"))
+                if (okBtn != null) {
+                    println("E2E: Clicking OK/Close")
+                    okBtn.click()
+                } else {
+                    println("E2E: ⚠️ Could not find OK/Close button! Dumping...")
+                }
+                device.waitForIdle()
+                continue
+            }
+
+            // 3. Handle Update Dialog
+            val updatePattern = java.util.regex.Pattern.compile("(?i)(update now|later)")
+            if (device.hasObject(By.text(updatePattern))) {
+                val btn = device.findObject(By.text(updatePattern))
+                println("E2E: Found Update Dialog ('${btn.text}'). Dismissing...")
+                btn.click()
+                device.waitForIdle()
+                continue
+            }
+
+            // 4. Handle "Start Shift" (Welcome Screen)
+            if (device.hasObject(By.text("Start Shift"))) {
+                println("E2E: Found 'Start Shift'. Clicking...")
+                device.findObject(By.text("Start Shift")).click()
+                device.waitForIdle()
+                continue
+            }
+
+            // 5. Handle Login Screen ("AUTHENTICATE" or email input)
+            if (device.hasObject(By.text("AUTHENTICATE"))) {
+                println("E2E: Found Auth Screen. Attempting Login...")
+                performLogin(device)
+                continue
+            }
+
+            // Small sleep to prevent CPU spinning
+            Thread.sleep(1000)
+        }
         
-        if (updateNowBtn != null) {
-             println("E2E: Found 'Update Now' button. Clicking...")
-             updateNowBtn.click()
-             // Wait for it to disappear
-             device.wait(Until.gone(By.text(updateNowPattern)), 10000L)
-        } else {
-             // Fallback: Check for "Later" and click it if Update Now missing?
-             // User prefers Update Now.
-             println("E2E: 'Update Now' button not found.")
+        // If loop finishes without return, we failed
+        println("E2E: ❌ Timed out waiting for Sales Screen.")
+        throw RuntimeException("Failed to reach Sales screen within 60s.")
+    }
+
+    private fun performLogin(device: UiDevice) {
+        // Enter Email
+        val emailObj = device.findObject(By.res(java.util.regex.Pattern.compile(".*email_input"))) 
+            ?: device.findObject(By.desc("Email Input"))
+            ?: device.findObject(By.text("COMMANDER EMAIL"))
+        
+        if (emailObj != null) {
+            emailObj.click()
+            device.waitForIdle()
+            device.executeShellCommand("input text derkusch@gmail.com")
+            device.pressBack() // Close keyboard
         }
 
-        // --- LOGIN FLOW ---
-        println("E2E: Checking for Auth Screen...")
-        if (device.wait(Until.findObject(By.text("AUTHENTICATE")), timeout) != null) {
-            println("E2E: Auth Screen Found. Entering Credentials...")
-            
-            // Enter Email
-            val emailObj = device.wait(Until.findObject(By.res(java.util.regex.Pattern.compile(".*email_input"))), 2000) 
-                ?: device.findObject(By.desc("Email Input"))
-            
-            if (emailObj != null) {
-                println("E2E: Found Email via ID/Desc. Clicking...")
-                emailObj.click()
-            } else {
-                println("E2E: Email Input NOT Found via ID/Desc. Clicking Label.")
-                val label = device.findObject(By.text("COMMANDER EMAIL"))
-                label?.click()
-            }
-            device.waitForIdle()
-            // Reliable text entry via shell
-            device.executeShellCommand("input text derkusch@gmail.com")
-            println("E2E: Typed Email via Shell")
-            device.pressBack() // Close keyboard
+        // Enter Password
+        val passObj = device.findObject(By.res(java.util.regex.Pattern.compile(".*password_input")))
+            ?: device.findObject(By.desc("Password Input"))
+            ?: device.findObject(By.text("PASSCODE"))
 
-            // Enter Password
-            val passObj = device.wait(Until.findObject(By.res(java.util.regex.Pattern.compile(".*password_input"))), 2000)
-                ?: device.findObject(By.desc("Password Input"))
-
-            if (passObj != null) {
-                 println("E2E: Found Password via ID/Desc. Clicking...")
-                passObj.click()
-            } else {
-                 println("E2E: Pw Input NOT Found via ID/Desc. Clicking Label.")
-                 val label = device.findObject(By.text("PASSCODE"))
-                 label?.click()
-            }
+        if (passObj != null) {
+            passObj.click()
             device.waitForIdle()
             device.executeShellCommand("input text Kuschi_2001")
-             println("E2E: Typed Password via Shell")
             device.pressBack()
-
-            // Click Login Button
-            val loginBtn = device.findObject(By.text("INITIALIZE SYSTEM"))
-            loginBtn?.click()
-            println("E2E: Clicked Login")
-            
-            // Wait for Login to process
-            device.wait(Until.gone(By.text("INITIALIZE SYSTEM")), 15000L)
-        }
-        
-        // --- HANDLE UPDATE DIALOG (AGAIN) ---
-        if (device.wait(Until.findObject(By.text(updateNowPattern)), 3000) != null) {
-             println("E2E: Found 'Update Now' button AGAIN. Clicking...")
-             val updateBtn = device.findObject(By.text(updateNowPattern))
-             updateBtn?.click()
-             device.wait(Until.gone(By.text(updateNowPattern)), 10000L)
         }
 
-        // Check for Welcome Screen "Start Shift"
-        println("E2E: Checking for Start Shift...")
-        if (device.wait(Until.findObject(By.text("Start Shift")), 10000L) != null) {
-            device.findObject(By.text("Start Shift")).click()
-            println("E2E: Clicked Start Shift")
-        }
+        // Click Login Button
+        val loginBtn = device.findObject(By.text("INITIALIZE SYSTEM"))
+        loginBtn?.click()
+        println("E2E: Clicked Login Button")
         
-        // Wait for Sales (Main Screen)
-        println("E2E: Waiting for Sales Screen...")
-        if (device.wait(Until.findObject(By.text("Sales")), timeout) == null) {
-             println("E2E: FAILED to reach Sales Screen. Dumping Hierarchy...")
-             device.executeShellCommand("uiautomator dump /sdcard/failure_dump.xml")
-             println("E2E: Dumped Window Hierarchy to /sdcard/failure_dump.xml via Shell")
-            throw RuntimeException("Failed to reach Sales screen. Stuck on Login, Update, or Welcome.")
-        }
-        println("E2E: Reached Sales Screen!")
+        // Wait briefly for transition
+        device.wait(Until.gone(By.text("INITIALIZE SYSTEM")), 5000L)
     }
 
     @Test
@@ -237,5 +244,28 @@ class EndToEndFlowTest {
         // 5. Verify Item Exists
         // Wait longer for sync/db update
         device.wait(Until.findObject(By.text(newItemName)), timeout)
+    }
+    private fun handleUpdateDialog(device: UiDevice) {
+        println("E2E: Checking for System/App Dialogs...")
+        
+        // 1. Android 15 Compatibility Dialog (16KB Page Size Warning)
+        val compatPattern = java.util.regex.Pattern.compile("(?i)(Android app compatibility|ELF alignment)")
+        if (device.wait(Until.findObject(By.text(compatPattern)), 10000) != null) {
+             println("E2E: Found Compatibility Dialog. Clicking OK...")
+             val okBtn = device.findObject(By.text("OK"))
+             okBtn?.click()
+             device.wait(Until.gone(By.text(compatPattern)), 2000L)
+        }
+
+        // 2. App Update Dialog
+        val pattern = java.util.regex.Pattern.compile("(?i)(update now|later)")
+        val dialogBtn = device.wait(Until.findObject(By.text(pattern)), 5000)
+        
+        if (dialogBtn != null) {
+             println("E2E: Found Dialog Button '${dialogBtn.text}'. Clicking...")
+             dialogBtn.click()
+             // Wait for it to disappear
+             device.wait(Until.gone(By.text(pattern)), 5000L)
+        }
     }
 }

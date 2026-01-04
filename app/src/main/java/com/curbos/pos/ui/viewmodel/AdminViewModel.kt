@@ -35,6 +35,7 @@ class AdminViewModel @javax.inject.Inject constructor(
     private val profileManager: com.curbos.pos.data.prefs.ProfileManager,
     private val transactionRepository: com.curbos.pos.data.repository.TransactionRepository,
     private val menuRepository: com.curbos.pos.data.repository.MenuRepository,
+    private val syncManager: com.curbos.pos.data.SyncManager,
     private val updateManager: com.curbos.pos.data.UpdateManager
 ) : BaseViewModel() {
 
@@ -170,30 +171,9 @@ class AdminViewModel @javax.inject.Inject constructor(
     fun syncMenu() {
         _uiState.update { it.copy(isLoading = true) }
         launchCatching {
-            // 1. Sync Menu Items
-            when (val result = menuRepository.fetchMenuItems()) {
-                is Result.Success -> {
-                    posDao.insertMenuItems(result.data)
-                }
-                is Result.Error -> {
-                    SnackbarManager.showError("Menu sync failed: ${result.message}")
-                }
-                Result.Loading -> {}
-            }
-            
-            // 2. Sync Modifiers
-            when (val result = menuRepository.fetchModifiers()) {
-                is Result.Success -> {
-                    result.data.forEach { posDao.insertModifier(it) } // No bulk insert for modifiers yet, loop fine for small sets
-                    SnackbarManager.showSuccess("Menu & Modifiers synced!")
-                }
-                 is Result.Error -> {
-                    SnackbarManager.showError("Modifier sync failed: ${result.message}")
-                }
-                Result.Loading -> {}
-            }
-            
+             syncManager.performTwoWaySync()
             _uiState.update { it.copy(isLoading = false) }
+            SnackbarManager.showSuccess("Menu Synced")
         }
     }
 

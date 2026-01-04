@@ -10,7 +10,7 @@ class BiometricHelper(private val activity: AppCompatActivity) {
 
     private val executor = ContextCompat.getMainExecutor(activity)
 
-    fun authenticate(onSuccess: () -> Unit) {
+    fun authenticate(title: String = "Admin Access Required", subtitle: String = "Verify identity", onSuccess: () -> Unit, onFailure: () -> Unit = {}) {
         val biometricManager = BiometricManager.from(activity)
         val canAuthenticate = biometricManager.canAuthenticate(
             BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
@@ -23,8 +23,8 @@ class BiometricHelper(private val activity: AppCompatActivity) {
         }
 
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Admin Access Required")
-            .setSubtitle("Verify identity to export sales data")
+            .setTitle(title)
+            .setSubtitle(subtitle)
             .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
             .build()
 
@@ -38,11 +38,13 @@ class BiometricHelper(private val activity: AppCompatActivity) {
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     super.onAuthenticationError(errorCode, errString)
                     Toast.makeText(activity, "Authentication error: $errString", Toast.LENGTH_SHORT).show()
+                    onFailure()
                 }
 
                 override fun onAuthenticationFailed() {
                     super.onAuthenticationFailed()
                     Toast.makeText(activity, "Authentication failed", Toast.LENGTH_SHORT).show()
+                    // Don't call onFailure here to allow retry (usually system handles retries)
                 }
             })
 

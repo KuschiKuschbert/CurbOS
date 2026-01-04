@@ -52,8 +52,11 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideSyncManager(posDao: PosDao): com.curbos.pos.data.SyncManager {
-        return com.curbos.pos.data.SyncManager(posDao)
+    fun provideSyncManager(
+        posDao: PosDao,
+        profileManager: ProfileManager
+    ): com.curbos.pos.data.SyncManager {
+        return com.curbos.pos.data.SyncManager(posDao, profileManager)
     }
 
     @Provides

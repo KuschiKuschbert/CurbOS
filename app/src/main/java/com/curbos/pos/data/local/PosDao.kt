@@ -16,14 +16,14 @@ import kotlinx.coroutines.flow.Flow
 interface PosDao {
 
     // Menu Items
-    @Query("SELECT * FROM menu_items")
+    @Query("SELECT * FROM menu_items WHERE deletedAt IS NULL")
     fun getAllMenuItems(): Flow<List<MenuItem>>
 
-    @Query("SELECT * FROM menu_items WHERE category = :category")
+    @Query("SELECT * FROM menu_items WHERE category = :category AND deletedAt IS NULL")
     fun getMenuItemsByCategory(category: String): Flow<List<MenuItem>>
 
     // Modifiers
-    @Query("SELECT * FROM modifier_options")
+    @Query("SELECT * FROM modifier_options WHERE deletedAt IS NULL")
     fun getAllModifiers(): Flow<List<ModifierOption>>
 
     @Query("SELECT COUNT(*) FROM menu_items WHERE category = :category")
@@ -40,6 +40,12 @@ interface PosDao {
 
     @Update
     suspend fun updateModifier(modifier: ModifierOption)
+
+    @Query("UPDATE modifier_options SET deletedAt = :timestamp WHERE id = :id")
+    suspend fun softDeleteModifier(id: String, timestamp: String)
+
+    @Query("SELECT * FROM modifier_options WHERE updatedAt > :since")
+    suspend fun getModifiedModifiers(since: String): List<ModifierOption>
 
     @androidx.room.Delete
     suspend fun deleteModifier(modifier: ModifierOption)
@@ -58,6 +64,12 @@ interface PosDao {
 
     @Update
     suspend fun updateMenuItem(item: MenuItem)
+
+    @Query("UPDATE menu_items SET deletedAt = :timestamp WHERE id = :id")
+    suspend fun softDeleteMenuItem(id: String, timestamp: String)
+
+    @Query("SELECT * FROM menu_items WHERE updatedAt > :since")
+    suspend fun getModifiedMenuItems(since: String): List<MenuItem>
 
     @androidx.room.Delete
     suspend fun deleteMenuItem(item: MenuItem)

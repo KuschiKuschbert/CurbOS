@@ -57,7 +57,9 @@ import androidx.work.WorkManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import java.util.concurrent.TimeUnit
 import com.curbos.pos.data.worker.SyncWorker
+
 import com.curbos.pos.ui.viewmodel.SalesViewModel
+import io.github.jan.supabase.gotrue.auth
 
 @dagger.hilt.android.AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -144,12 +146,9 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
                         
-                        // 3. Realtime Menu Sync
+                        // 3. Automatic 2-Way Sync (Realtime)
                         launch {
-                            menuRepository.subscribeToMenuChanges {
-                                // Trigger simple refresh or sync
-                                scope.launch { syncManager.checkForUpdates() }
-                            }
+                            syncManager.startRealtimeListening()
                         }
                         
                         // 4. Periodic Menu Integrity Check (Self-Healing)
@@ -168,7 +167,7 @@ class MainActivity : AppCompatActivity() {
                 if (hasUpdates) {
                     com.curbos.pos.ui.components.SyncConflictDialog(
                         onConfirmSync = {
-                            scope.launch { syncManager.syncNow() }
+                            scope.launch { syncManager.performTwoWaySync() }
                         },
                         onDismiss = { /* User deferred update */ }
                     )
@@ -322,9 +321,11 @@ class MainActivity : AppCompatActivity() {
                                 label = { Text("Admin") },
                                 selected = currentRoute == "admin",
                                 onClick = { 
-                                    biometricHelper.authenticate {
-                                        navController.navigate("admin") { launchSingleTop = true; restoreState = true }
-                                    }
+                                    biometricHelper.authenticate(
+                                        onSuccess = {
+                                            navController.navigate("admin") { launchSingleTop = true; restoreState = true }
+                                        }
+                                    )
                                 }
                             )
                             Spacer(Modifier.weight(1f))
@@ -413,13 +414,15 @@ class MainActivity : AppCompatActivity() {
                                         selected = currentRoute == "admin",
                                         onClick = { 
                                             // Intercept for Biometric Auth
-                                            biometricHelper.authenticate {
-                                                navController.navigate("admin") {
-                                                    popUpTo("sales") { saveState = true }
-                                                    launchSingleTop = true
-                                                    restoreState = true
+                                            biometricHelper.authenticate(
+                                                onSuccess = {
+                                                    navController.navigate("admin") {
+                                                        popUpTo("sales") { saveState = true }
+                                                        launchSingleTop = true
+                                                        restoreState = true
+                                                    }
                                                 }
-                                            }
+                                            )
                                         }
                                     )
                                 }
@@ -438,9 +441,33 @@ class MainActivity : AppCompatActivity() {
                         composable("splash") {
                             SplashScreen(
                                 onTimeout = {
-                                    val next = if (profileManager.getChefName() == null) "login" else "welcome"
-                                    navController.navigate(next) {
-                                        popUpTo("splash") { inclusive = true }
+                                    // Check if we have a valid session
+                                    val session = SupabaseManager.client.auth.currentSessionOrNull()
+                                    if (session != null) {
+                                        // Session exists -> Trigger Biometric Unlock
+                                        biometricHelper.authenticate(
+                                            title = "Unlock CurbOS",
+                                            subtitle = "Verify identity to continue",
+                                            onSuccess = {
+                                                navController.navigate("welcome") {
+                                                    popUpTo("splash") { inclusive = true }
+                                                }
+                                            },
+                                            onFailure = {
+                                                // If Biometrics cancelled/failed, fallback to Login
+                                                navController.navigate("login") {
+                                                    popUpTo("splash") { inclusive = true }
+                                                }
+                                            }
+                                        )
+                                    } else {
+                                        // No session -> Go to Login (or Welcome if ChefName mismatch logic persists, but Login is safer standard)
+                                        // Keeping original logic fallback: if ChefName exists but no session, we might need login. 
+                                        // But ProfileManager might be outdated compared to Auth. 
+                                        // Let's standardise: No Session -> Login.
+                                        navController.navigate("login") {
+                                            popUpTo("splash") { inclusive = true }
+                                        }
                                     }
                                 }
                             )
@@ -488,18 +515,19 @@ class MainActivity : AppCompatActivity() {
                                         } else {
                                             posDao.insertMenuItem(item)
                                         }
-                                        // Sync to Cloud
+                                        // Automatic Background Sync (Push & Pull)
                                         launch(kotlinx.coroutines.Dispatchers.IO) {
-                                            menuRepository.upsertMenuItem(item)
+                                            syncManager.performTwoWaySync()
                                         }
                                     }
                                 },
                                 onDelete = { item ->
                                     scope.launch {
-                                        posDao.deleteMenuItem(item)
-                                        // Sync to Cloud
+                                        val timestamp = java.time.Instant.now().toString()
+                                        posDao.softDeleteMenuItem(item.id, timestamp)
+                                        // Automatic Sync (Push Soft Delete)
                                         launch(kotlinx.coroutines.Dispatchers.IO) {
-                                            menuRepository.deleteMenuItem(item.id)
+                                            syncManager.performTwoWaySync()
                                         }
                                     }
                                 },
@@ -511,18 +539,19 @@ class MainActivity : AppCompatActivity() {
                                         } else {
                                             posDao.insertModifier(modifier)
                                         }
-                                        // Sync to Cloud
+                                        // Automatic Sync
                                         launch(kotlinx.coroutines.Dispatchers.IO) {
-                                            menuRepository.upsertModifier(modifier)
+                                            syncManager.performTwoWaySync()
                                         }
                                     }
                                 },
                                 onDeleteModifier = { modifier ->
                                     scope.launch {
-                                        posDao.deleteModifier(modifier)
-                                        // Sync to Cloud
+                                        val timestamp = java.time.Instant.now().toString()
+                                        posDao.softDeleteModifier(modifier.id, timestamp)
+                                        // Automatic Sync
                                         launch(kotlinx.coroutines.Dispatchers.IO) {
-                                            menuRepository.deleteModifier(modifier.id)
+                                            syncManager.performTwoWaySync()
                                         }
                                     }
                                 }

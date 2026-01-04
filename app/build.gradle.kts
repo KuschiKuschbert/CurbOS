@@ -141,6 +141,9 @@ android {
         kotlinCompilerExtensionVersion = "1.5.14"
     }
     packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
             excludes += "META-INF/DEPENDENCIES"
@@ -233,7 +236,7 @@ dependencies {
     // ksp("androidx.hilt:hilt-compiler:1.1.0") // Replaced above
 
     // P2P / Nearby Connections
-    implementation("com.google.android.gms:play-services-nearby:19.0.0")
+    implementation("com.google.android.gms:play-services-nearby:19.3.0")
 
     // QR Code Generation
     implementation("com.google.zxing:core:3.5.3")
@@ -246,7 +249,7 @@ dependencies {
     implementation("androidx.camera:camera-view:$cameraXVersion")
 
     // ML Kit Barcode Scanning
-    implementation("com.google.mlkit:barcode-scanning:17.2.0")
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
 
     // Security & Data Encryption
     implementation("androidx.security:security-crypto:1.1.0-alpha06")

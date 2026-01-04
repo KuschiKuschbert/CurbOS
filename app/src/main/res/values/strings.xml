@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">CurbOS</string>
     <string name="com_auth0_client_id">xpHhovaF3i3aDBqFzn148dSZR3KhAa6t</string>
-    <string name="com_auth0_domain">dev-7myakdl4itf644km.us.auth0.com</string>
+    <string name="com_auth0_domain">auth.prepflow.org</string>
 </resources>

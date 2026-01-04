@@ -156,7 +156,7 @@ object SupabaseManager {
 
 
     // Auth0 Login (Exchange ID Token)
-    suspend fun signInWithAuth0(idToken: String, accessToken: String): com.curbos.pos.common.Result<Boolean> {
+    suspend fun signInWithAuth0(idToken: String): com.curbos.pos.common.Result<Boolean> {
         return withContext(Dispatchers.IO) { // Switch to IO thread for blocking network calls
             try {
                 com.curbos.pos.common.Logger.d("SupabaseManager", "Exchange Auth0 Token for Supabase Session (Custom API)...")

@@ -56,7 +56,7 @@ class LoginViewModel @Inject constructor(
         val auth0 = com.auth0.android.Auth0(clientId, domain)
 
         com.auth0.android.provider.WebAuthProvider.login(auth0)
-            .withScheme("demo") // Ensure this matches build.gradle manifestPlaceholder
+            .withScheme("demo") // Changed to demo to bypass assetlinks failure
             .withScope("openid profile email offline_access")
             .start(context, object : com.auth0.android.callback.Callback<com.auth0.android.result.Credentials, com.auth0.android.authentication.AuthenticationException> {
                 override fun onSuccess(result: com.auth0.android.result.Credentials) {
@@ -70,7 +70,8 @@ class LoginViewModel @Inject constructor(
 
                     viewModelScope.launch {
                         // 2. Perform Supabase Login (Gate check)
-                        SupabaseManager.signInWithAuth0()
+                        com.curbos.pos.common.Logger.d("LoginViewModel", "Auth0 Success! ID Token: ${result.idToken.take(10)}...")
+                        SupabaseManager.signInWithAuth0(result.idToken)
                         
                         // 2. Check Subscription
                         val subResult = SupabaseManager.checkSubscriptionStatus(email)

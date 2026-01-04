@@ -10,8 +10,11 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Dispatchers
 import com.curbos.pos.data.model.MenuItem
 import com.curbos.pos.data.model.ModifierOption
+import com.curbos.pos.data.prefs.ProfileManager
+
 class SyncManager(
-    private val posDao: PosDao
+    private val posDao: PosDao,
+    private val profileManager: ProfileManager
 ) {
     private val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO)
 
@@ -76,26 +79,78 @@ class SyncManager(
         }
     }
 
-    suspend fun syncNow() {
+    suspend fun performTwoWaySync() {
         _syncState.value = SyncState.Syncing
         try {
-            // 1. Menu
-             when (val result = SupabaseManager.fetchMenuItems()) {
-                is Result.Success -> posDao.insertMenuItems(result.data)
+            val lastSyncTime = profileManager.getLastMenuSyncTime()
+            val newSyncTime = java.time.Instant.now().toString()
+
+            // 1. PUSH: Upload Local Dirty Items
+            // Note: We should ideally have 'dirty' flag, but for now we look for items updated after last sync
+            // This assumes local clock is roughly in sync, which is risky.
+            // A better way is: "Any item where updatedAt > lastSyncTime AND its NOT a fresh download"
+            // For this implementation, we will trust the "Convergent Sync" we designed:
+            // Sync = Push Local Changes -> Pull Remote Changes.
+            
+            // Push Menu Items
+            val dirtyItems = posDao.getModifiedMenuItems(lastSyncTime)
+            if (dirtyItems.isNotEmpty()) {
+                SupabaseManager.upsertMenuItems(dirtyItems)
+                // Note: If upsert updates timestamp on server, we get it back next sync. That's fine.
+            }
+
+            // Push Modifiers
+            val dirtyModifiers = posDao.getModifiedModifiers(lastSyncTime)
+            if (dirtyModifiers.isNotEmpty()) {
+                SupabaseManager.upsertModifiers(dirtyModifiers)
+            }
+
+            // 2. PULL: Download Remote Changes (Delta Sync)
+            // Fetch items changed since lastSyncTime (or all if never synced)
+            // We use a small buffer (e.g. 1 minute) to avoid missing changes due to clock skew
+            
+            // Menu Items
+            when (val result = SupabaseManager.fetchMenuItemsSince(lastSyncTime)) {
+                is Result.Success -> {
+                    result.data.forEach { item ->
+                        if (item.deletedAt != null) {
+                            posDao.deleteMenuItem(item) // Hard delete locally for now, or keep as soft delete?
+                            // If we keep soft delete, UI must filter. We updated UI to filter.
+                            // But keeping dead rows forever in SQLite is bad? 
+                            // Actually, soft delete in SQLite allows syncing "Delete" to other devices.
+                            // Let's use softDelete in DAO.
+                             posDao.softDeleteMenuItem(item.id, item.deletedAt)
+                        } else {
+                            posDao.insertMenuItem(item)
+                        }
+                    }
+                }
                 is Result.Error -> throw Exception(result.message)
                 else -> {}
             }
-            
-            // 2. Modifiers
-             when (val result = SupabaseManager.fetchModifiers()) {
-                is Result.Success -> result.data.forEach { posDao.insertModifier(it) }
+
+            // Modifiers
+            when (val result = SupabaseManager.fetchModifiersSince(lastSyncTime)) {
+                is Result.Success -> {
+                     result.data.forEach { item ->
+                        if (item.deletedAt != null) {
+                             posDao.softDeleteModifier(item.id, item.deletedAt)
+                        } else {
+                            posDao.insertModifier(item)
+                        }
+                    }
+                }
                 is Result.Error -> throw Exception(result.message)
                 else -> {}
             }
-            
+
+            // 3. SUCCESS: Update Checkpoint
+            profileManager.saveLastMenuSyncTime(newSyncTime)
             _hasAvailableUpdates.value = false
             _syncState.value = SyncState.Success
+
         } catch (e: Exception) {
+            com.curbos.pos.common.Logger.e("SyncManager", "Two-way sync failed", e)
             _syncState.value = SyncState.Error(e.message ?: "Sync failed")
         }
     }
@@ -103,12 +158,12 @@ class SyncManager(
         SupabaseManager.subscribeToMenuChanges {
             // Trigger Sync
              scope.launch {
-                syncNow()
+                performTwoWaySync()
             }
         }
         SupabaseManager.subscribeToModifierChanges {
              scope.launch {
-                syncNow()
+                performTwoWaySync()
             }
         }
     }

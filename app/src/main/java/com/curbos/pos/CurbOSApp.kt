@@ -22,7 +22,7 @@ class CurbOSApp : Application(), androidx.work.Configuration.Provider {
         com.curbos.pos.common.Logger.i("CurbOSApp", "Application starting (Modernized Logging Enabled)")
 
         // 2. Initialize Supabase
-        SupabaseManager.init()
+        SupabaseManager.init(this)
 
         // 3. Set up Global Coroutine Exception Handler
         setupGlobalErrorHandler()

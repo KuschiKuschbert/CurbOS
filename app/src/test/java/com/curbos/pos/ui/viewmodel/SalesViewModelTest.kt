@@ -220,7 +220,7 @@ class SalesViewModelTest {
         viewModel.addToCart(menuItem) // Total 10
         
         // Setup Reward (Free Taco, cost 50, val $5)
-        val reward = LoyaltyReward(id="r1", description="Free Taco", costMiles=50)
+        val reward = LoyaltyReward(id="r1", description="Free Taco", costMiles=50, isAutoApplied = true, discountAmount = 5.0)
         
         // Mock Snackbar
         io.mockk.mockkObject(com.curbos.pos.common.SnackbarManager)
@@ -231,7 +231,8 @@ class SalesViewModelTest {
         
         val state = viewModel.uiState.value
         // Debugging prints
-        println("Discount: ${state.discountAmount}, Redeemed: ${state.milesRedeemed}, Total: ${state.totalAmount}")
+        println("DEBUG: Discount=${state.discountAmount}, Redeemed=${state.milesRedeemed}, Total=${state.totalAmount}")
+        println("DEBUG: UiState=$state")
         
         assertEquals("Discount should be 5.0", 5.0, state.discountAmount, 0.0)
         assertEquals("Miles Redeemed should be 50.0", 50.0, state.milesRedeemed, 0.0)
@@ -261,7 +262,7 @@ class SalesViewModelTest {
         viewModel.addToCart(menuItem)
         
         // 3. Redeem Reward (50 miles, $5 off)
-        val reward = LoyaltyReward(id="r1", description="Free Taco", costMiles=50)
+        val reward = LoyaltyReward(id="r1", description="Free Taco", costMiles=50, isAutoApplied = true, discountAmount = 5.0)
         viewModel.redeemReward(reward)
         
         // State: Total=$55 (60 - 5). Redeemed=50.

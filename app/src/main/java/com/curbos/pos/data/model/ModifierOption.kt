@@ -18,5 +18,7 @@ data class ModifierOption(
     @kotlinx.serialization.SerialName("is_available")
     val isAvailable: Boolean = true,
     @kotlinx.serialization.SerialName("updated_at")
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
+    @kotlinx.serialization.SerialName("deleted_at")
+    val deletedAt: String? = null
 )
