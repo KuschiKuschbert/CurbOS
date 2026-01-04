@@ -174,7 +174,23 @@ object SupabaseManager {
                 com.curbos.pos.common.Logger.d("SupabaseManager", "Native Supabase Sign-In with Auth0 ID Token...")
 
                 val httpClient = HttpClient(CIO)
-                val response = httpClient.post("${SUPABASE_URL}/auth/v1/token?grant_type=id_token") {
+                // Log the role claim specifically to help with verification (since full token is truncated in Logcat)
+            try {
+                val parts = idToken.split(".")
+                if (parts.size >= 2) {
+                    val payload = String(android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE))
+                    Log.d("CurbOS_Auth", "ID Token Claims: $payload")
+                    if (payload.contains("\"role\":\"authenticated\"")) {
+                        Log.d("CurbOS_Auth", "✅ VERIFIED: Role 'authenticated' is present in token!")
+                    } else {
+                        Log.e("CurbOS_Auth", "❌ WARNING: Role 'authenticated' NOT found in token claims.")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("CurbOS_Auth", "Error checking token claims: ${e.message}")
+            }
+
+            val response = httpClient.post("${SUPABASE_URL}/auth/v1/token?grant_type=id_token") {
                     header("apikey", SUPABASE_KEY)
                     header("Authorization", "Bearer $SUPABASE_KEY")
                     contentType(ContentType.Application.Json)
