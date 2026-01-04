@@ -1,5 +1,8 @@
 package com.curbos.pos.data.remote
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
 import com.curbos.pos.data.model.MenuItem
 import com.curbos.pos.data.model.Transaction
 import com.curbos.pos.data.model.Customer
@@ -22,6 +25,15 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 import io.github.jan.supabase.serializer.KotlinXSerializer
+import android.content.Context
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import io.github.jan.supabase.gotrue.user.UserSession
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
+import io.github.jan.supabase.gotrue.SessionStatus
+import io.github.jan.supabase.gotrue.providers.builtin.IDToken
 
 object SupabaseManager {
 
@@ -41,14 +53,27 @@ object SupabaseManager {
         }
         
         // Auto-fix localhost for Android Emulator
-        // If running on real device, 10.0.2.2 won't work either, but localhost DEFINITELY won't work.
-        // This attempts to help emulator dev environments.
         val configUrl = if (SUPABASE_URL.contains("localhost")) {
             com.curbos.pos.common.Logger.w("SupabaseManager", "Localhost detected in config. Rewriting to 10.0.2.2 for emulator access.")
             SUPABASE_URL.replace("localhost", "10.0.2.2")
         } else {
             SUPABASE_URL
         }
+
+        val context = applicationContext ?: throw IllegalStateException("SupabaseManager must be initialized with context before use!")
+
+        // Create EncryptedSharedPreferences for Secure Session Storage
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+
+        val sharedPreferences = EncryptedSharedPreferences.create(
+            context,
+            "supabase_session_secure",
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
 
         createSupabaseClient(
             supabaseUrl = configUrl,
@@ -61,23 +86,47 @@ object SupabaseManager {
             })
             install(Postgrest)
             install(Realtime)
-            install(Auth)
+            install(Auth) {
+                // Use our custom EncryptedSharedPreferences SessionManager
+                sessionManager = SharedPreferencesSessionManager(sharedPreferences)
+            }
             
             com.curbos.pos.common.Logger.d("SupabaseManager", "Initializing Supabase Client with URL: ${BuildConfig.SUPABASE_URL}")
         }
     }
+
+
+    // Custom SessionManager using EncryptedSharedPreferences
+    class SharedPreferencesSessionManager(private val prefs: android.content.SharedPreferences) : io.github.jan.supabase.gotrue.SessionManager {
+        
+        override suspend fun saveSession(session: UserSession) {
+            val jsonString = Json.encodeToString(session)
+            prefs.edit().putString("supabase_session", jsonString).apply()
+        }
+
+        override suspend fun loadSession(): UserSession? {
+            val jsonString = prefs.getString("supabase_session", null) ?: return null
+            return try {
+                Json.decodeFromString<UserSession>(jsonString)
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        override suspend fun deleteSession() {
+            prefs.edit().remove("supabase_session").apply()
+        }
+    }
+
+    private var applicationContext: Context? = null
 
     /**
      * Pre-initializes the Supabase client.
      * MUST be called from the Main thread because Supabase Auth 
      * registers lifecycle observers.
      */
-    /**
-     * Pre-initializes the Supabase client.
-     * MUST be called from the Main thread because Supabase Auth 
-     * registers lifecycle observers.
-     */
-    fun init() {
+    fun init(context: Context) {
+        applicationContext = context.applicationContext
         // Just accessing the lazy property triggers initialization
         client
     }
@@ -105,27 +154,56 @@ object SupabaseManager {
         }
     }
 
+
     // Auth0 Login (Exchange ID Token)
-    suspend fun signInWithAuth0(): com.curbos.pos.common.Result<Boolean> {
-        return try {
-            // Option 1: If Supabase Project has Auth0 Provider enabled
-            // client.auth.signInWith(IDToken) {
-            //     this.idToken = idToken
-            //     this.provider = IDToken.Provider.OR("auth0") // or custom
-            // }
-            
-            // Option 2: Verify Subscription directly using the email from Auth0 (Client-side gating)
-            // This is a temporary measure if Supabase <-> Auth0 link is not fully configured for RLS.
-            //Ideally, we expect Supabase to accept the token or we use a service key (not safe for prod, but local logic).
-            
-            // For this requested migration: We will assume we just need to GATE the user.
-            // The Auth0 SDK handles the login. We just need to check permissions.
-            // We will trust the Android App's Auth0 login for now, and query the public user table.
-            com.curbos.pos.common.Logger.d("SupabaseManager", "Auth0 Login Successful (Client Side)")
-            com.curbos.pos.common.Result.Success(true)
-        } catch (e: Exception) {
-            com.curbos.pos.common.Logger.e("SupabaseManager", "Auth0 Login failed", e)
-            com.curbos.pos.common.Result.Error(e, "Auth0 Login failed: ${e.localizedMessage}")
+    suspend fun signInWithAuth0(idToken: String, accessToken: String): com.curbos.pos.common.Result<Boolean> {
+        return withContext(Dispatchers.IO) { // Switch to IO thread for blocking network calls
+            try {
+                com.curbos.pos.common.Logger.d("SupabaseManager", "Exchange Auth0 Token for Supabase Session (Custom API)...")
+
+                // Call our Custom Next.js API to exchange tokens (Bypassing Supabase "Auth0 Provider" issues)
+                val url = java.net.URL("https://prepflow.org/api/curbos/auth/exchange-token")
+                val connection = (url.openConnection() as java.net.HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    setRequestProperty("Content-Type", "application/json")
+                    // No need for Supabase Key here, it's a public wrapper API
+                    doOutput = true
+                }
+
+                // Construct JSON Payload
+                // API expects { "idToken": "..." }
+                val jsonPayload = """
+                    {
+                        "idToken": "$idToken"
+                    }
+                """.trimIndent()
+
+                connection.outputStream.use { os ->
+                    val input = jsonPayload.toByteArray(java.nio.charset.StandardCharsets.UTF_8)
+                    os.write(input, 0, input.size)
+                }
+
+                val responseCode = connection.responseCode
+                if (responseCode in 200..299) {
+                    val response = connection.inputStream.bufferedReader().use { it.readText() }
+
+                    // Decode the UserSession from the JSON response
+                    val session = Json { ignoreUnknownKeys = true }.decodeFromString<UserSession>(response)
+
+                    // Import the session into the Supabase Client
+                    client.auth.importSession(session)
+
+                    com.curbos.pos.common.Logger.d("SupabaseManager", "Supabase Session Established & Persisted via Import!")
+                    com.curbos.pos.common.Result.Success(true)
+                } else {
+                    val errorResponse = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "Unknown Error"
+                    com.curbos.pos.common.Logger.e("SupabaseManager", "Supabase Custom Sign-In failed: $responseCode - $errorResponse")
+                    com.curbos.pos.common.Result.Error(Exception("HTTP $responseCode"), "Sign-In Failed: $errorResponse")
+                }
+            } catch (e: Exception) {
+                com.curbos.pos.common.Logger.e("SupabaseManager", "Supabase Sign-In Exception", e)
+                com.curbos.pos.common.Result.Error(e, "Supabase Sign-In failed: ${e.localizedMessage}")
+            }
         }
     }
 
@@ -184,6 +262,22 @@ object SupabaseManager {
         }
     }
 
+    suspend fun fetchMenuItemsSince(timestamp: String): com.curbos.pos.common.Result<List<MenuItem>> {
+        return try {
+            val items = client.postgrest["pos_menu_items"]
+                .select {
+                    filter {
+                        gt("updated_at", timestamp)
+                    }
+                }
+                .decodeList<MenuItem>()
+            com.curbos.pos.common.Result.Success(items)
+        } catch (e: Exception) {
+            com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to sync menu delta", e)
+            com.curbos.pos.common.Result.Error(e, "Failed to sync menu delta: ${e.localizedMessage}")
+        }
+    }
+
     suspend fun fetchModifiers(): com.curbos.pos.common.Result<List<com.curbos.pos.data.model.ModifierOption>> {
         return try {
             val items = client.postgrest["pos_modifier_options"]
@@ -193,6 +287,22 @@ object SupabaseManager {
         } catch (e: Exception) {
             com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to sync modifiers", e)
             com.curbos.pos.common.Result.Error(e, "Failed to sync modifiers: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun fetchModifiersSince(timestamp: String): com.curbos.pos.common.Result<List<com.curbos.pos.data.model.ModifierOption>> {
+        return try {
+            val items = client.postgrest["pos_modifier_options"]
+                .select {
+                     filter {
+                        gt("updated_at", timestamp)
+                    }
+                }
+                .decodeList<com.curbos.pos.data.model.ModifierOption>()
+            com.curbos.pos.common.Result.Success(items)
+        } catch (e: Exception) {
+            com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to sync modifiers delta", e)
+            com.curbos.pos.common.Result.Error(e, "Failed to sync modifiers delta: ${e.localizedMessage}")
         }
     }
 
@@ -214,6 +324,16 @@ object SupabaseManager {
         } catch (e: Exception) {
             com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to sync menu item", e)
             com.curbos.pos.common.Result.Error(e, "Failed to sync menu item: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun upsertMenuItems(items: List<MenuItem>): com.curbos.pos.common.Result<Unit> {
+        return try {
+            client.postgrest["pos_menu_items"].upsert(items, onConflict = "id")
+            com.curbos.pos.common.Result.Success(Unit)
+        } catch (e: Exception) {
+            com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to batch upsert menu items", e)
+            com.curbos.pos.common.Result.Error(e, "Failed to batch upsert menu items: ${e.localizedMessage}")
         }
     }
 
@@ -268,6 +388,16 @@ object SupabaseManager {
         } catch (e: Exception) {
             com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to sync modifier", e)
             com.curbos.pos.common.Result.Error(e, "Failed to sync modifier: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun upsertModifiers(modifiers: List<com.curbos.pos.data.model.ModifierOption>): com.curbos.pos.common.Result<Unit> {
+        return try {
+            client.postgrest["pos_modifier_options"].upsert(modifiers, onConflict = "id")
+            com.curbos.pos.common.Result.Success(Unit)
+        } catch (e: Exception) {
+            com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to batch upsert modifiers", e)
+            com.curbos.pos.common.Result.Error(e, "Failed to batch upsert modifiers: ${e.localizedMessage}")
         }
     }
 
