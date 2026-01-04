@@ -24,6 +24,7 @@ import io.ktor.client.engine.cio.CIO
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+import io.github.jan.supabase.gotrue.VerifyType
 import io.github.jan.supabase.serializer.KotlinXSerializer
 import android.util.Log
 import android.content.Context
@@ -47,6 +48,8 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 object SupabaseManager {
 
@@ -174,54 +177,66 @@ object SupabaseManager {
     suspend fun signInWithAuth0(idToken: String): com.curbos.pos.common.Result<Boolean> {
         return withContext(Dispatchers.IO) {
             try {
-                com.curbos.pos.common.Logger.d("SupabaseManager", "Native Supabase Sign-In with Auth0 ID Token...")
+                com.curbos.pos.common.Logger.d("SupabaseManager", "Native Supabase Sign-In with Auth0 ID Token (Via Bridge)...")
 
                 val httpClient = HttpClient(CIO) {
                     install(ContentNegotiation) {
                         json()
                     }
                 }
-                // Log the role claim specifically to help with verification (since full token is truncated in Logcat)
-            try {
-                val parts = idToken.split(".")
-                if (parts.size >= 2) {
-                    val payload = String(android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE))
-                    Log.d("CurbOS_Auth", "ID Token Claims: $payload")
-                    if (payload.contains("\"role\":\"authenticated\"")) {
-                        Log.d("CurbOS_Auth", "✅ VERIFIED: Role 'authenticated' is present in token!")
-                    } else {
-                        Log.e("CurbOS_Auth", "❌ WARNING: Role 'authenticated' NOT found in token claims.")
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("CurbOS_Auth", "Error checking token claims: ${e.message}")
-            }
 
-            val response = httpClient.post("${SUPABASE_URL}/auth/v1/token?grant_type=id_token") {
-                    header("apikey", SUPABASE_KEY)
-                    header("Authorization", "Bearer $SUPABASE_KEY")
+                // Log the role claim specifically to help with verification (since full token is truncated in Logcat)
+                try {
+                    val parts = idToken.split(".")
+                    if (parts.size >= 2) {
+                        val payload = String(android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE))
+                        Log.d("CurbOS_Auth", "ID Token Claims: $payload")
+                    }
+                } catch (e: Exception) {
+                    Log.e("CurbOS_Auth", "Error checking token claims: ${e.message}")
+                }
+
+                // 1. Call our custom Bridge API to verify Auth0 token and get Supabase token_hash
+                val bridgeResponse = httpClient.post("https://prepflow.org/api/curbos/auth/exchange-token") {
                     contentType(ContentType.Application.Json)
                     setBody(buildJsonObject {
                         put("id_token", idToken)
-                        put("provider", "auth0")
-                        put("client_id", "CO3Vl37SuZ4e9wke1PitgWvAUyMR2HfL")
-                        put("issuer", "https://auth.prepflow.org/")
                     })
                 }
 
-                val bodyText = response.bodyAsText()
-                if (response.status.value in 200..299) {
-                    val session = Json { ignoreUnknownKeys = true }.decodeFromString<UserSession>(bodyText)
-                    client.auth.importSession(session)
-                    com.curbos.pos.common.Logger.d("SupabaseManager", "Supabase Session Established natively!")
-                    com.curbos.pos.common.Result.Success(true)
-                } else {
-                    com.curbos.pos.common.Logger.e("SupabaseManager", "Token Exchange Failed: $bodyText")
-                    com.curbos.pos.common.Result.Error(Exception(bodyText), "Token Exchange failed: $bodyText")
+                if (bridgeResponse.status.value != 200) {
+                    val errorBody = bridgeResponse.bodyAsText()
+                    Log.e("SupabaseManager", "Bridge Exchange Failed: $errorBody")
+                    return@withContext com.curbos.pos.common.Result.Error(Exception("Bridge Exchange Failed: ${bridgeResponse.status}"))
                 }
+
+                val resultJson = Json.parseToJsonElement(bridgeResponse.bodyAsText()).jsonObject
+                val tokenHash = resultJson["token_hash"]?.jsonPrimitive?.content
+                val email = resultJson["email"]?.jsonPrimitive?.content
+
+                if (tokenHash == null || email == null) {
+                    return@withContext com.curbos.pos.common.Result.Error(Exception("Invalid bridge response: missing token_hash or email"))
+                }
+
+                Log.d("SupabaseManager", "Bridge Successful. Verifying session for $email...")
+
+                // 2. Use the token_hash to sign in natively to Supabase
+                try {
+                    client.auth.verifyEmail(
+                        type = VerifyType.MAGIC_LINK,
+                        tokenHash = tokenHash,
+                        email = email
+                    )
+                    Log.d("SupabaseManager", "Supabase Sign-In Successful via Bridge!")
+                    return@withContext com.curbos.pos.common.Result.Success(true)
+                } catch (e: Exception) {
+                    Log.e("SupabaseManager", "Supabase Verify Failed: ${e.message}")
+                    return@withContext com.curbos.pos.common.Result.Error(e)
+                }
+
             } catch (e: Exception) {
-                com.curbos.pos.common.Logger.e("SupabaseManager", "Supabase Native Sign-In failed", e)
-                com.curbos.pos.common.Result.Error(e, "Native Sign-In failed: ${e.localizedMessage}")
+                com.curbos.pos.common.Logger.e("SupabaseManager", "Bridge Sign-In failed", e)
+                com.curbos.pos.common.Result.Error(e)
             }
         }
     }
