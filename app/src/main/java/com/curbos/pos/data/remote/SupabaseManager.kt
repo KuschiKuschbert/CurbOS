@@ -25,6 +25,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 import io.github.jan.supabase.serializer.KotlinXSerializer
+import android.util.Log
 import android.content.Context
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
