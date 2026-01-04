@@ -42,6 +42,8 @@ import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -174,7 +176,11 @@ object SupabaseManager {
             try {
                 com.curbos.pos.common.Logger.d("SupabaseManager", "Native Supabase Sign-In with Auth0 ID Token...")
 
-                val httpClient = HttpClient(CIO)
+                val httpClient = HttpClient(CIO) {
+                    install(ContentNegotiation) {
+                        json()
+                    }
+                }
                 // Log the role claim specifically to help with verification (since full token is truncated in Logcat)
             try {
                 val parts = idToken.split(".")
