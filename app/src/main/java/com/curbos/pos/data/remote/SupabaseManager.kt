@@ -24,7 +24,6 @@ import io.ktor.client.engine.cio.CIO
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-import io.github.jan.supabase.gotrue.VerifyType
 import io.github.jan.supabase.serializer.KotlinXSerializer
 import android.util.Log
 import android.content.Context
@@ -56,11 +55,13 @@ object SupabaseManager {
     private const val SUPABASE_URL = BuildConfig.SUPABASE_URL
     private const val SUPABASE_KEY = BuildConfig.SUPABASE_KEY
     
-    // For local dev with emulator, use 10.0.2.2 instead of localhost
-    // private const val SUPABASE_URL_LOCAL = "http://10.0.2.2:54321" 
+    // Configured Json instance for consistent serialization
+    private val authJson = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+        coerceInputValues = true
+    }
 
-    // Use a lazy delegate so we can ensure initialization happens on the Main thread 
-    // if accessed from there, or we can pre-init it safely.
     // Use a lazy delegate so we can ensure initialization happens on the Main thread 
     // if accessed from there, or we can pre-init it safely.
     val client: SupabaseClient by lazy {
@@ -116,21 +117,28 @@ object SupabaseManager {
     class SharedPreferencesSessionManager(private val prefs: android.content.SharedPreferences) : io.github.jan.supabase.gotrue.SessionManager {
         
         override suspend fun saveSession(session: UserSession) {
-            val jsonString = Json.encodeToString(session)
-            prefs.edit().putString("supabase_session", jsonString).apply()
+            try {
+                val jsonString = authJson.encodeToString(session)
+                prefs.edit().putString("supabase_session", jsonString).apply()
+                Log.d("Supabase_Session", "Session securely saved")
+            } catch (e: Exception) {
+                Log.e("Supabase_Session", "Failed to save session: ${e.message}")
+            }
         }
 
         override suspend fun loadSession(): UserSession? {
             val jsonString = prefs.getString("supabase_session", null) ?: return null
             return try {
-                Json.decodeFromString<UserSession>(jsonString)
+                authJson.decodeFromString<UserSession>(jsonString)
             } catch (e: Exception) {
+                Log.e("Supabase_Session", "Failed to load session (Format mismatch?): ${e.message}")
                 null
             }
         }
 
         override suspend fun deleteSession() {
             prefs.edit().remove("supabase_session").apply()
+            Log.d("Supabase_Session", "Session deleted")
         }
     }
 
@@ -172,32 +180,22 @@ object SupabaseManager {
 
 
     // Auth0 Login (Native Supabase Integration)
-    // We manually call the GoTrue /token endpoint because the SDK's IDToken provider 
-    // is missing fields for custom OIDC providers like Auth0.
+    // We manually call our custom Bridge and then Supabase REST API 
+    // to bypass SDK-specific naming conflicts across versions.
     suspend fun signInWithAuth0(idToken: String): com.curbos.pos.common.Result<Boolean> {
         return withContext(Dispatchers.IO) {
             try {
-                com.curbos.pos.common.Logger.d("SupabaseManager", "Native Supabase Sign-In with Auth0 ID Token (Via Bridge)...")
+                com.curbos.pos.common.Logger.d("SupabaseManager", "Starting Auth0 Token Exchange flow...")
 
                 val httpClient = HttpClient(CIO) {
                     install(ContentNegotiation) {
-                        json()
+                        json(authJson)
                     }
-                }
-
-                // Log the role claim specifically to help with verification (since full token is truncated in Logcat)
-                try {
-                    val parts = idToken.split(".")
-                    if (parts.size >= 2) {
-                        val payload = String(android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE))
-                        Log.d("CurbOS_Auth", "ID Token Claims: $payload")
-                    }
-                } catch (e: Exception) {
-                    Log.e("CurbOS_Auth", "Error checking token claims: ${e.message}")
                 }
 
                 // 1. Call our custom Bridge API to verify Auth0 token and get Supabase token_hash
-                val bridgeResponse = httpClient.post("https://prepflow.org/api/curbos/auth/exchange-token") {
+                // Use www.prepflow.org to avoid 307 redirects from middleware
+                val bridgeResponse = httpClient.post("https://www.prepflow.org/api/curbos/auth/exchange-token") {
                     contentType(ContentType.Application.Json)
                     setBody(buildJsonObject {
                         put("id_token", idToken)
@@ -210,7 +208,7 @@ object SupabaseManager {
                     return@withContext com.curbos.pos.common.Result.Error(Exception("Bridge Exchange Failed: ${bridgeResponse.status}"))
                 }
 
-                val resultJson = Json.parseToJsonElement(bridgeResponse.bodyAsText()).jsonObject
+                val resultJson = authJson.parseToJsonElement(bridgeResponse.bodyAsText()).jsonObject
                 val tokenHash = resultJson["token_hash"]?.jsonPrimitive?.content
                 val email = resultJson["email"]?.jsonPrimitive?.content
 
@@ -218,24 +216,42 @@ object SupabaseManager {
                     return@withContext com.curbos.pos.common.Result.Error(Exception("Invalid bridge response: missing token_hash or email"))
                 }
 
-                Log.d("SupabaseManager", "Bridge Successful. Verifying session for $email...")
+                Log.d("SupabaseManager", "Bridge Successful. Verifying session via REST API...")
 
-                // 2. Use the token_hash to sign in natively to Supabase
+                // 2. Use the token_hash to sign in natively to Supabase via manual REST call
+                // (This is version-agnostic and avoids Unresolved Reference errors)
                 try {
-                    client.auth.verifyEmail(
-                        type = VerifyType.MAGIC_LINK,
-                        tokenHash = tokenHash,
-                        email = email
-                    )
-                    Log.d("SupabaseManager", "Supabase Sign-In Successful via Bridge!")
+                    val verifyResponse = httpClient.post("${SUPABASE_URL}/auth/v1/verify") {
+                        header("apikey", SUPABASE_KEY)
+                        header("Authorization", "Bearer $SUPABASE_KEY")
+                        contentType(ContentType.Application.Json)
+                        setBody(buildJsonObject {
+                            put("type", "magiclink")
+                            put("token_hash", tokenHash)
+                        })
+                    }
+
+                    if (verifyResponse.status.value !in 200..299) {
+                        val errorBody = verifyResponse.bodyAsText()
+                        Log.e("SupabaseManager", "Native Verify Failed: $errorBody")
+                        return@withContext com.curbos.pos.common.Result.Error(Exception("Native Verify Failed: $errorBody"))
+                    }
+
+                    val sessionJson = verifyResponse.bodyAsText()
+                    val session = authJson.decodeFromString<UserSession>(sessionJson)
+                    
+                    // Manually import the session into the Supabase SDK
+                    client.auth.importSession(session)
+                    
+                    Log.d("SupabaseManager", "Supabase Session established and imported successfully!")
                     return@withContext com.curbos.pos.common.Result.Success(true)
                 } catch (e: Exception) {
-                    Log.e("SupabaseManager", "Supabase Verify Failed: ${e.message}")
+                    Log.e("SupabaseManager", "Supabase REST Verify Failed: ${e.message}")
                     return@withContext com.curbos.pos.common.Result.Error(e)
                 }
 
             } catch (e: Exception) {
-                com.curbos.pos.common.Logger.e("SupabaseManager", "Bridge Sign-In failed", e)
+                com.curbos.pos.common.Logger.e("SupabaseManager", "Bridge flow failed", e)
                 com.curbos.pos.common.Result.Error(e)
             }
         }
