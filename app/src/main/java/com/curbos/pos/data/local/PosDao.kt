@@ -147,12 +147,30 @@ interface PosDao {
     @Update
     suspend fun updateCustomer(customer: Customer)
 
+    @Query("SELECT MAX(updatedAt) FROM customers")
+    suspend fun getLatestCustomerUpdate(): String?
+
+    @Query("SELECT * FROM customers WHERE updatedAt > :since")
+    suspend fun getModifiedCustomers(since: String): List<Customer>
+
+    @Query("UPDATE customers SET deletedAt = :timestamp WHERE id = :id")
+    suspend fun softDeleteCustomer(id: String, timestamp: String)
+
     // Loyalty Rewards
     @Query("SELECT * FROM loyalty_rewards")
     fun getAllLoyaltyRewards(): Flow<List<LoyaltyReward>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertLoyaltyRewards(rewards: List<LoyaltyReward>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLoyaltyReward(reward: LoyaltyReward)
+
+    @Query("SELECT MAX(updatedAt) FROM loyalty_rewards")
+    suspend fun getLatestRewardUpdate(): String?
+
+    @Query("UPDATE loyalty_rewards SET deletedAt = :timestamp WHERE id = :id")
+    suspend fun softDeleteReward(id: String, timestamp: String)
 
     // Quests
     @Query("SELECT * FROM quests WHERE isActive = 1")
@@ -163,4 +181,10 @@ interface PosDao {
 
     @Update
     suspend fun updateQuest(quest: com.curbos.pos.data.model.Quest)
+
+    @Query("SELECT MAX(updatedAt) FROM quests")
+    suspend fun getLatestQuestUpdate(): String?
+
+    @Query("UPDATE quests SET deletedAt = :timestamp WHERE id = :id")
+    suspend fun softDeleteQuest(id: String, timestamp: String)
 }

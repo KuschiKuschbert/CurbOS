@@ -36,7 +36,7 @@ import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.ripple.rememberRipple
+
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -143,7 +143,7 @@ fun MenuItemCard(item: MenuItem, onClick: (MenuItem) -> Unit) {
             .scale(scale)
             .clickable(
                 interactionSource = interactionSource,
-                indication = rememberRipple(),
+                indication = ripple(),
                 onClick = { onClick(item) }
             ),
         backgroundColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -1602,7 +1602,9 @@ fun PassportContent(customer: Customer) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(LoyaltyConstants.TacoRegion.ALL_REGIONS) { region ->
+            val regions = com.curbos.pos.data.LoyaltyRepository.getAvailableRegions()
+            items(regions.count()) { index ->
+                val region = regions[index]
                 val isUnlocked = customer.unlockedRegions.contains(region)
                 RegionStampCard(regionName = region, isUnlocked = isUnlocked)
             }

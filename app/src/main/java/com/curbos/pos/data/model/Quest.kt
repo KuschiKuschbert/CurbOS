@@ -30,5 +30,11 @@ data class Quest(
     val expiryDate: Long? = null,
     
     @SerialName("is_active")
-    val isActive: Boolean = true
+    val isActive: Boolean = true,
+
+    @SerialName("updated_at")
+    val updatedAt: String? = null,
+    
+    @SerialName("deleted_at")
+    val deletedAt: String? = null
 )

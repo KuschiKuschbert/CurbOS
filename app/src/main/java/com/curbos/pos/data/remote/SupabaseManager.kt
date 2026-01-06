@@ -2,12 +2,14 @@ package com.curbos.pos.data.remote
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.curbos.pos.BuildConfig
 
 import com.curbos.pos.data.model.MenuItem
 import com.curbos.pos.data.model.Transaction
 import com.curbos.pos.data.model.Customer
 import com.curbos.pos.data.model.LoyaltyReward
-import com.curbos.pos.BuildConfig
+import com.curbos.pos.data.model.LoyaltyConfig
+import com.curbos.pos.data.model.UserSettings
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
@@ -70,12 +72,20 @@ object SupabaseManager {
         }
         
         // Auto-fix localhost for Android Emulator
-        val configUrl = if (SUPABASE_URL.contains("localhost")) {
+        var configUrl = if (SUPABASE_URL.contains("localhost")) {
             com.curbos.pos.common.Logger.w("SupabaseManager", "Localhost detected in config. Rewriting to 10.0.2.2 for emulator access.")
             SUPABASE_URL.replace("localhost", "10.0.2.2")
         } else {
             SUPABASE_URL
         }
+
+        // Enforce HTTPS if missing (unless localhost/10.0.2.2 which might be http)
+        if (!configUrl.startsWith("http://") && !configUrl.startsWith("https://")) {
+             configUrl = "https://$configUrl"
+             com.curbos.pos.common.Logger.w("SupabaseManager", "Protocol missing in SUPABASE_URL. Added https:// prefix.")
+        }
+        
+        com.curbos.pos.common.Logger.d("SupabaseManager", "Final Configured URL: $configUrl")
 
         val context = applicationContext ?: throw IllegalStateException("SupabaseManager must be initialized with context before use!")
 
@@ -740,6 +750,37 @@ object SupabaseManager {
         }
     }
 
+    suspend fun fetchCustomersSince(timestamp: String): com.curbos.pos.common.Result<List<Customer>> {
+        return try {
+            val items = client.postgrest["pos_customers"]
+                .select {
+                    filter {
+                        gt("updated_at", timestamp)
+                    }
+                }
+                .decodeList<Customer>()
+            com.curbos.pos.common.Result.Success(items)
+        } catch (e: Exception) {
+            com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to sync customers delta", e)
+            com.curbos.pos.common.Result.Error(e, "Failed to sync customers delta: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun subscribeToCustomerChanges(onUpdate: () -> Unit) {
+        try {
+            val channel = client.realtime.channel("customers-sync")
+            val changes = channel.postgresChangeFlow<io.github.jan.supabase.realtime.PostgresAction>(schema = "public") {
+                table = "pos_customers"
+            }
+            safeSubscribe(channel)
+            changes.collect {
+                onUpdate()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     suspend fun upsertCustomer(customer: Customer): com.curbos.pos.common.Result<Customer> {
         return try {
             val result = client.postgrest["pos_customers"]
@@ -774,6 +815,112 @@ object SupabaseManager {
         } catch (e: Exception) {
             com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to fetch rewards", e)
             com.curbos.pos.common.Result.Error(e, "Failed to fetch rewards: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun fetchRewardsSince(timestamp: String): com.curbos.pos.common.Result<List<LoyaltyReward>> {
+        return try {
+            val items = client.postgrest["loyalty_rewards"]
+                .select {
+                    filter {
+                        gt("updated_at", timestamp)
+                    }
+                }
+                .decodeList<LoyaltyReward>()
+            com.curbos.pos.common.Result.Success(items)
+        } catch (e: Exception) {
+            com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to sync rewards delta", e)
+            com.curbos.pos.common.Result.Error(e, "Failed to sync rewards delta: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun subscribeToRewardChanges(onUpdate: () -> Unit) {
+        try {
+            val channel = client.realtime.channel("rewards-sync")
+            val changes = channel.postgresChangeFlow<io.github.jan.supabase.realtime.PostgresAction>(schema = "public") {
+                table = "loyalty_rewards"
+            }
+            safeSubscribe(channel)
+            changes.collect {
+                onUpdate()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    // Quests
+     suspend fun fetchQuests(): com.curbos.pos.common.Result<List<com.curbos.pos.data.model.Quest>> {
+        return try {
+            val items = client.postgrest["quests"]
+                .select()
+                .decodeList<com.curbos.pos.data.model.Quest>()
+            com.curbos.pos.common.Result.Success(items)
+        } catch (e: Exception) {
+            com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to fetch quests", e)
+            com.curbos.pos.common.Result.Error(e, "Failed to fetch quests: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun fetchQuestsSince(timestamp: String): com.curbos.pos.common.Result<List<com.curbos.pos.data.model.Quest>> {
+        return try {
+            val items = client.postgrest["quests"]
+                .select {
+                    filter {
+                        gt("updated_at", timestamp)
+                    }
+                }
+                .decodeList<com.curbos.pos.data.model.Quest>()
+            com.curbos.pos.common.Result.Success(items)
+        } catch (e: Exception) {
+            com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to sync quests delta", e)
+            com.curbos.pos.common.Result.Error(e, "Failed to sync quests delta: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun subscribeToQuestChanges(onUpdate: () -> Unit) {
+        try {
+            val channel = client.realtime.channel("quests-sync")
+            val changes = channel.postgresChangeFlow<io.github.jan.supabase.realtime.PostgresAction>(schema = "public") {
+                table = "quests"
+            }
+            safeSubscribe(channel)
+            changes.collect {
+                onUpdate()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun fetchLoyaltyConfig(): com.curbos.pos.common.Result<LoyaltyConfig> {
+        return try {
+            val session = client.auth.currentSessionOrNull()
+            if (session == null) {
+                 return com.curbos.pos.common.Result.Error(Exception("No session"), "Not logged in")
+            }
+            
+            val userId = session.user?.id
+            if (userId == null) {
+                return com.curbos.pos.common.Result.Error(Exception("No user ID"), "User ID not found")
+            }
+
+            val settings = client.postgrest["user_settings"]
+                .select {
+                    filter {
+                        eq("user_id", userId)
+                    }
+                }
+                .decodeSingleOrNull<UserSettings>()
+
+            if (settings?.loyaltyConfig != null) {
+                com.curbos.pos.common.Result.Success(settings.loyaltyConfig)
+            } else {
+                 com.curbos.pos.common.Result.Error(Exception("Config not found"), "Config not set")
+            }
+        } catch (e: Exception) {
+            com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to fetch loyalty config", e)
+            com.curbos.pos.common.Result.Error(e, "Failed to fetch loyalty config: ${e.localizedMessage}")
         }
     }
 }

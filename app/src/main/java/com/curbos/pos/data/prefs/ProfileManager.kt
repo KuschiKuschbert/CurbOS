@@ -71,7 +71,8 @@ class ProfileManager(context: Context) {
         scope.launch {
             val chef = getChefName()
             val settings = com.curbos.pos.data.model.UserSettings(
-                chefName = chef, // Best effort
+                userId = "", // Will be overwritten by SupabaseManager before save used currentUser
+                chefName = chef,
                 simplifiedKds = enabled
             )
             com.curbos.pos.data.remote.SupabaseManager.saveSettings(settings)

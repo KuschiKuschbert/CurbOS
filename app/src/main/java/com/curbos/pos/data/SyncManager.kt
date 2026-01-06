@@ -65,12 +65,31 @@ class SyncManager(
                 val remoteMax = remoteMods.maxOfOrNull { it.updatedAt ?: "" } ?: ""
                 val localMax = localModTime ?: ""
 
-                 if (remoteMax > localMax) {
+                if (remoteMax > localMax) {
                     _hasAvailableUpdates.value = true
                     _syncState.value = SyncState.UpdateAvailable
                     return
                 }
             }
+
+            // Check Customers
+            val localCustTime = posDao.getLatestCustomerUpdate()
+            // Just check delta for efficiency if possible
+            val remoteCustResult = SupabaseManager.fetchCustomersSince(localCustTime ?: "1970-01-01T00:00:00Z")
+             if (remoteCustResult is Result.Success && remoteCustResult.data.isNotEmpty()) {
+                _hasAvailableUpdates.value = true
+                _syncState.value = SyncState.UpdateAvailable
+                return
+            }
+             
+            // Check Rewards (Simpler check: just fetch all headers? Or assume sync needed)
+            // For now, let's just trigger update available if we can fetch them.
+            // Ideally we'd have a lightweight "metadata" endpoint. 
+            // We'll skip deep check for Rewards/Quests optimization to keep it simple: 
+            // If Menu/Customers are fine, we assume these are fine or synced with them.
+            // But let's add a quick check if possible.
+            
+            _syncState.value = SyncState.Idle
             
             _syncState.value = SyncState.Idle
 
@@ -144,6 +163,60 @@ class SyncManager(
                 else -> {}
             }
 
+            // Customers
+            when (val result = SupabaseManager.fetchCustomersSince(lastSyncTime)) {
+                is Result.Success -> {
+                    result.data.forEach { item ->
+                        if (item.deletedAt != null) {
+                            posDao.softDeleteCustomer(item.id, item.deletedAt)
+                        } else {
+                            // Note: Insert replaces existing, handling updates
+                            posDao.insertCustomer(item)
+                        }
+                    }
+                }
+                is Result.Error -> throw Exception(result.message)
+                else -> {}
+            }
+
+            // Rewards
+             when (val result = SupabaseManager.fetchRewardsSince(lastSyncTime)) {
+                is Result.Success -> {
+                    result.data.forEach { item ->
+                        if (item.deletedAt != null) {
+                            posDao.softDeleteReward(item.id, item.deletedAt)
+                        } else {
+                            posDao.insertLoyaltyReward(item)
+                        }
+                    }
+                }
+                is Result.Error -> throw Exception(result.message)
+                else -> {}
+            }
+
+            // Quests
+             when (val result = SupabaseManager.fetchQuestsSince(lastSyncTime)) {
+                is Result.Success -> {
+                    result.data.forEach { item ->
+                        if (item.deletedAt != null) {
+                            posDao.softDeleteQuest(item.id, item.deletedAt)
+                        } else {
+                           // For quests we only have updateQuest and insertQuests(List)
+                           // Let's assume we can just ignore for now or batch insert if list
+                        }
+                    }
+                     // Batch insert/update for Quests (simpler due to DAO structure)
+                    if (result.data.isNotEmpty()) {
+                        val active = result.data.filter { it.deletedAt == null }
+                        if (active.isNotEmpty()) {
+                            posDao.insertQuests(active)
+                        }
+                    }
+                }
+                is Result.Error -> throw Exception(result.message)
+                else -> {}
+            }
+
             // 3. SUCCESS: Update Checkpoint
             profileManager.saveLastMenuSyncTime(newSyncTime)
             _hasAvailableUpdates.value = false
@@ -165,6 +238,15 @@ class SyncManager(
              scope.launch {
                 performTwoWaySync()
             }
+        }
+        SupabaseManager.subscribeToCustomerChanges {
+            scope.launch { performTwoWaySync() }
+        }
+        SupabaseManager.subscribeToRewardChanges {
+            scope.launch { performTwoWaySync() }
+        }
+        SupabaseManager.subscribeToQuestChanges {
+            scope.launch { performTwoWaySync() }
         }
     }
     

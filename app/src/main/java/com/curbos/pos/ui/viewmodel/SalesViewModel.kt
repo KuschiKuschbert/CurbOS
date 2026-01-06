@@ -9,6 +9,7 @@ import com.curbos.pos.data.model.Customer
 import com.curbos.pos.data.model.LoyaltyReward
 import com.curbos.pos.data.local.PosDao
 import com.curbos.pos.data.model.LoyaltyConstants
+import com.curbos.pos.data.LoyaltyRepository
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -144,11 +145,11 @@ class SalesViewModel @javax.inject.Inject constructor(
                 if (customer == null) false // Hidden for guests
                 else {
                     // Check Rank Hierarchy
-                    val myRank = LoyaltyConstants.TacoRank.values().find { it.rankName == customer.currentRank }
-                    val required = LoyaltyConstants.TacoRank.values().find { it.rankName == reqRank }
+                    val myRankCfg = LoyaltyRepository.getRankByName(customer.currentRank)
+                    val reqRankCfg = LoyaltyRepository.getRankByName(reqRank)
                     
-                    if (myRank != null && required != null) {
-                        myRank.minMiles >= required.minMiles
+                    if (myRankCfg != null && reqRankCfg != null) {
+                        myRankCfg.minMiles >= reqRankCfg.minMiles
                     } else false
                 }
             }
@@ -409,7 +410,7 @@ class SalesViewModel @javax.inject.Inject constructor(
         val newLifetime = currentLifetime + earned
         val newRedeemable = currentRedeemable + earned
         
-        val newRank = LoyaltyConstants.TacoRank.fromMiles(newLifetime).rankName
+        val newRank = LoyaltyRepository.getRankForMiles(newLifetime)
         
         val updatedCustomer = customer.copy(
             lifetimeMiles = newLifetime,
@@ -533,7 +534,7 @@ class SalesViewModel @javax.inject.Inject constructor(
                         // 1. Core Points & Rank
                         val newLifetime = customer.lifetimeMiles + earned
                         val newRedeemable = customer.redeemableMiles - redeemed + earned
-                        val newRank = LoyaltyConstants.TacoRank.fromMiles(newLifetime).rankName
+                        val newRank = LoyaltyRepository.getRankForMiles(newLifetime)
                         
                         // 2. Region Unlocks
                         val regionsInOrder = currentState.cartItems.mapNotNull { it.menuItem.region }.distinct()
@@ -624,7 +625,9 @@ class SalesViewModel @javax.inject.Inject constructor(
         cartItems.forEach { item ->
             // Assume Category is the key
             val category = item.menuItem.category
-            // Only counting certain categories for now? Lets count all.
+            // Log the punch action
+            com.curbos.pos.common.Logger.d("SalesViewModel", "Punching card for category: $category")
+            
             val currentCount = newCards[category] ?: 0
             newCards[category] = currentCount + 1
         }

@@ -116,6 +116,25 @@ class MainActivity : AppCompatActivity() {
                     androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
                 ) { /* Handle result */ }
 
+                // Request Permissions on Startup
+                LaunchedEffect(Unit) {
+                    val permissions = mutableListOf(
+                        android.Manifest.permission.CAMERA,
+                        android.Manifest.permission.ACCESS_FINE_LOCATION
+                    )
+                    
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                        permissions.add(android.Manifest.permission.BLUETOOTH_SCAN)
+                        permissions.add(android.Manifest.permission.BLUETOOTH_CONNECT)
+                        permissions.add(android.Manifest.permission.BLUETOOTH_ADVERTISE)
+                    } else {
+                        permissions.add(android.Manifest.permission.BLUETOOTH)
+                        permissions.add(android.Manifest.permission.BLUETOOTH_ADMIN)
+                    }
+                    
+                    permissionLauncher.launch(permissions.toTypedArray())
+                }
+
                 // syncManager and transactionSyncManager are injected
 
                 val hasUpdates by syncManager.hasAvailableUpdates.collectAsState()

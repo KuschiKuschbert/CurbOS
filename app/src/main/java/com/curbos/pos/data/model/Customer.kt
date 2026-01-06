@@ -38,7 +38,13 @@ data class Customer(
     val stampCards: Map<String, Int> = emptyMap(), // Category -> Count
     
     @SerialName("active_quests")
-    val activeQuests: List<QuestProgress> = emptyList()
+    val activeQuests: List<QuestProgress> = emptyList(),
+
+    @SerialName("updated_at")
+    val updatedAt: String? = null,
+    
+    @SerialName("deleted_at")
+    val deletedAt: String? = null
 )
 
 @Serializable

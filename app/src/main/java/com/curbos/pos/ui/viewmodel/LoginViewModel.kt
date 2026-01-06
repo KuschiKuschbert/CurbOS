@@ -71,13 +71,25 @@ class LoginViewModel @Inject constructor(
                     viewModelScope.launch {
                         // 2. Perform Supabase Login (Gate check)
                         com.curbos.pos.common.Logger.d("LoginViewModel", "Auth0 Success! ID Token: ${result.idToken.take(10)}...")
-                        SupabaseManager.signInWithAuth0(result.idToken)
+                        val supabaseResult = SupabaseManager.signInWithAuth0(result.idToken)
+                        
+                        if (supabaseResult is com.curbos.pos.common.Result.Error) {
+                            com.curbos.pos.common.Logger.e("LoginViewModel", "Supabase Sign-In Failed: ${supabaseResult.message}", supabaseResult.exception)
+                            _loginState.value = LoginState.Error(supabaseResult.message ?: "Authentication failed during token exchange")
+                            return@launch
+                        }
+
+                        com.curbos.pos.common.Logger.d("LoginViewModel", "Supabase Sign-In Success! Proceeding to subscription check for $email")
                         
                         // 2. Check Subscription
                         val subResult = SupabaseManager.checkSubscriptionStatus(email)
                         when (subResult) {
                             is com.curbos.pos.common.Result.Success -> {
                                 if (subResult.data) {
+                                    // Save User Name to Trigger "isLoggedIn" State
+                                    val name = userProfile.name ?: userProfile.nickname ?: email.split("@")[0]
+                                    profileManager.saveChefName(name)
+                                    
                                     _loginState.value = LoginState.Success
                                 } else {
                                     _loginState.value = LoginState.UpgradeRequired

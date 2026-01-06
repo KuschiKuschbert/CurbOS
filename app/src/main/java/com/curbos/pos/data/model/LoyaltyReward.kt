@@ -16,5 +16,11 @@ data class LoyaltyReward(
     @SerialName("discount_amount")
     val discountAmount: Double = 0.0,
     @SerialName("is_auto_applied")
-    val isAutoApplied: Boolean = true
+    val isAutoApplied: Boolean = true,
+
+    @SerialName("updated_at")
+    val updatedAt: String? = null,
+    
+    @SerialName("deleted_at")
+    val deletedAt: String? = null
 )

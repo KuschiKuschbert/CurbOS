@@ -81,15 +81,15 @@ class CustomerDisplayViewModel @javax.inject.Inject constructor(
     private fun loadActiveOrders(showLoading: Boolean = true) {
         if (showLoading) _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
-            when (val result = transactionRepository.fetchActiveTransactions()) {
-                is Result.Success -> {
-                    processOrders(result.data)
-                }
-                is Result.Error -> {
-                    _uiState.update { it.copy(error = result.message, isLoading = false) }
-                }
-                else -> {}
+            // Offline First: Observe Local DB
+            transactionRepository.getActiveTransactions().collect { transactions ->
+                processOrders(transactions)
             }
+        }
+        
+        // Trigger a background sync to ensure we have latest from cloud too
+        viewModelScope.launch {
+            transactionRepository.fetchActiveTransactions()
         }
     }
 
@@ -115,7 +115,10 @@ class CustomerDisplayViewModel @javax.inject.Inject constructor(
     private fun startRealtimeListening() {
         viewModelScope.launch {
             transactionRepository.subscribeToTransactionChanges {
-                loadActiveOrders(showLoading = false)
+                // Repository handles fetching new data into Local DB.
+                // Our local flow (getActiveTransactions) will automatically emit the new data.
+                // We don't need to manually reload here.
+                com.curbos.pos.common.Logger.d("CustomerDisplayVM", "Cloud update received (handled by Repo)")
             }
         }
     }

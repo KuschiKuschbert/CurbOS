@@ -200,12 +200,11 @@ class KitchenViewModel @javax.inject.Inject constructor(
     
     fun completeOrder(transaction: Transaction) {
         viewModelScope.launch {
-            // We should use updateTransaction(tx) instead of ID status to be safe with full objects, 
-            // but status update is fine too if Repo handles it via ID.
-            val result = transactionRepository.updateTransactionStatus(transaction.id, "READY")
-            if (result is Result.Error) {
-                _uiState.update { it.copy(error = result.message) }
-            }
+            // Local First: Update the full object in local DB via updateTransaction
+            // This ensures "Customer Display" (watching local DB) sees it instantly.
+            // Old way (updateTransactionStatus) only called API.
+            val updatedTx = transaction.copy(fulfillmentStatus = "READY")
+            transactionRepository.updateTransaction(updatedTx)
         }
     }
 }
