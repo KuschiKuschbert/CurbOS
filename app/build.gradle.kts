@@ -41,7 +41,7 @@ android {
         versionCode = getGitCommitCount()
         
         // Base version for CI parsing (Do not rename this variable without updating CI/CD scripts)
-        val baseVersionName = "0.6.9"
+        val baseVersionName = "0.7.0"
         
         // Allow version name to be overridden by -PversionName
         versionName = if (project.hasProperty("versionName")) {

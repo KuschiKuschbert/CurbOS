@@ -42,11 +42,29 @@ class TransactionSyncManager @javax.inject.Inject constructor(
                 com.curbos.pos.common.Logger.e("TransactionSyncManager", "Failed to insert local transaction: ${e.message}")
             }
 
-            // 2. Queue for Sync
+            // 2. Queue for Sync (Offline Safety)
             val jsonString = json.encodeToString(transaction)
             val offlineTx = OfflineTransaction(transactionJson = jsonString)
             posDao.insertOfflineTransaction(offlineTx)
             com.curbos.pos.common.Logger.d("TransactionSyncManager", "Offline record staged.")
+
+            // 3. Attempt Immediate Upload (Write-Through)
+            // We block here intentionally to ensure "Read-Your-Writes" consistency for QR Codes
+            try {
+                com.curbos.pos.common.Logger.d("TransactionSyncManager", "Attempting immediate write-through upload for ${transaction.id}...")
+                val result = SupabaseManager.uploadTransaction(transaction)
+                if (result is Result.Success) {
+                     com.curbos.pos.common.Logger.d("TransactionSyncManager", "Immediate upload success! Removing offline record.")
+                     posDao.deleteOfflineTransaction(offlineTx)
+                } else if (result is Result.Error) {
+                     com.curbos.pos.common.Logger.w("TransactionSyncManager", "Immediate upload failed (${result.message}), leaving in offline queue.")
+                } else {
+                     com.curbos.pos.common.Logger.w("TransactionSyncManager", "Immediate upload failed (Unknown result), leaving in offline queue.")
+                }
+            } catch (e: Exception) {
+                com.curbos.pos.common.Logger.e("TransactionSyncManager", "Immediate upload exception", e)
+                // Consume exception, let background sync handle it
+            }
 
             // Broadcast to P2P Clients if Hosting
             if (p2pConnectivityManager.isHosting) {
@@ -80,6 +98,23 @@ class TransactionSyncManager @javax.inject.Inject constructor(
             val offlineTx = OfflineTransaction(transactionJson = jsonString)
             posDao.insertOfflineTransaction(offlineTx)
             
+            // 3. Attempt Immediate Upload (Write-Through)
+            try {
+                com.curbos.pos.common.Logger.d("TransactionSyncManager", "Attempting immediate write-through update for ${transaction.id}...")
+                // Note: uploadTransaction uses UPSERT, so it handles updates too.
+                val result = SupabaseManager.uploadTransaction(transaction)
+                if (result is Result.Success) {
+                     com.curbos.pos.common.Logger.d("TransactionSyncManager", "Immediate update success! Removing offline record.")
+                     posDao.deleteOfflineTransaction(offlineTx)
+                } else if (result is Result.Error) {
+                     com.curbos.pos.common.Logger.w("TransactionSyncManager", "Immediate update failed (${result.message}), leaving in offline queue.")
+                } else {
+                     com.curbos.pos.common.Logger.w("TransactionSyncManager", "Immediate update failed (Unknown result), leaving in offline queue.")
+                }
+            } catch (e: Exception) {
+                com.curbos.pos.common.Logger.e("TransactionSyncManager", "Immediate update exception", e)
+            }
+
             // Broadcast to P2P Clients if Hosting
             if (p2pConnectivityManager.isHosting) {
                  val message = P2PMessage(

@@ -19,8 +19,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.curbos.pos.data.prefs.ProfileManager
+import com.curbos.pos.ui.theme.DarkBackground
 import com.curbos.pos.ui.theme.ElectricLime
 import com.curbos.pos.ui.theme.SafetyOrange
+import com.curbos.pos.ui.theme.SecondaryText
+import com.curbos.pos.ui.theme.CurbOSShapes
 import kotlinx.coroutines.launch
 
 @Composable
@@ -58,7 +61,7 @@ fun LoginScreen(
                     Text("Cancel", color = Color.Gray)
                 }
             },
-            containerColor = Color(0xFF111111),
+            containerColor = DarkBackground,
             titleContentColor = ElectricLime,
             textContentColor = Color.White
         )
@@ -79,7 +82,7 @@ fun LoginScreen(
             ) {
                 Text(
                     text = "CURBSIDE OPERATING SYSTEM",
-                    color = Color.Gray,
+                    color = SecondaryText,
                     fontSize = 14.sp,
                     letterSpacing = 4.sp,
                     fontWeight = FontWeight.Bold
@@ -125,7 +128,7 @@ fun LoginScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = CurbOSShapes.medium
                 ) {
                     if (loginState is com.curbos.pos.ui.viewmodel.LoginState.Loading) {
                         CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(24.dp))

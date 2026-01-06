@@ -70,11 +70,19 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.CardGiftcard
 import com.curbos.pos.ui.components.PulsatingBackground
+import com.curbos.pos.ui.dialogs.PaymentSelectionDialog
+import com.curbos.pos.ui.dialogs.RecentTransactionItem
+import com.curbos.pos.ui.dialogs.RecentTransactionsDialog
+import com.curbos.pos.ui.dialogs.TransactionSuccessDialog
+import com.curbos.pos.ui.dialogs.generateQrCode
+import com.curbos.pos.ui.theme.CurbOSShapes
 import com.curbos.pos.ui.theme.ElectricLime
 import com.curbos.pos.ui.theme.IceCreamCone
 import com.curbos.pos.ui.theme.SafetyOrange
+import com.curbos.pos.ui.theme.SecondaryText
 import com.curbos.pos.ui.theme.Shirt
 import com.curbos.pos.ui.theme.Soda
+import com.curbos.pos.ui.theme.SurfaceColor
 import com.curbos.pos.ui.theme.Taco
 import com.curbos.pos.ui.viewmodel.SalesViewModel
 import com.curbos.pos.util.HapticHelper
@@ -409,7 +417,7 @@ fun QuickSalesScreen(
                         Dialog(onDismissRequest = { showCartSheet = false }) {
                             Surface(
                                 shape = RoundedCornerShape(16.dp),
-                                color = Color(0xFF1E1E1E),
+                                color = SurfaceColor,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .fillMaxHeight(0.9f)
@@ -659,7 +667,7 @@ fun RecentTransactionsDialog(
      Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = Color(0xFF1E1E1E),
+            color = SurfaceColor,
             modifier = Modifier.fillMaxWidth().heightIn(max = 500.dp)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
@@ -1297,7 +1305,7 @@ fun LoyaltySearchDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = Color(0xFF1E1E1E),
+            color = SurfaceColor,
             modifier = Modifier.fillMaxWidth().fillMaxHeight(0.85f).padding(16.dp)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
@@ -1437,7 +1445,7 @@ fun LoyaltyRewardsDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = Color(0xFF1E1E1E),
+            color = SurfaceColor,
             modifier = Modifier.fillMaxWidth().fillMaxHeight(0.9f)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {

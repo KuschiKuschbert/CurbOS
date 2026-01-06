@@ -25,8 +25,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.curbos.pos.data.model.Transaction
 import com.curbos.pos.ui.viewmodel.KitchenViewModel
+import com.curbos.pos.ui.theme.CurbOSShapes
+import com.curbos.pos.ui.theme.DarkBackground
 import com.curbos.pos.ui.theme.ElectricLime
 import com.curbos.pos.ui.theme.SafetyOrange
+import com.curbos.pos.ui.theme.SecondaryText
+import com.curbos.pos.ui.theme.SurfaceElevated
 import java.util.concurrent.TimeUnit
 
 
@@ -145,7 +149,7 @@ fun KitchenScreen(
                             if (aggregatedItems.isEmpty()) {
                                 item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                                     Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                                        Text("No active items to cook! 🔥", color = Color.Gray, fontSize = 20.sp)
+                                        Text("No active items to cook! 🔥", color = SecondaryText, fontSize = 20.sp)
                                     }
                                 }
                             } else {
@@ -158,7 +162,7 @@ fun KitchenScreen(
                             if (uiState.activeOrders.isEmpty()) {
                                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                                     Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                                        Text("All quiet in the kitchen... 👨‍🍳", color = Color.Gray, fontSize = 20.sp)
+                                        Text("All quiet in the kitchen... 👨‍🍳", color = SecondaryText, fontSize = 20.sp)
                                     }
                                }
                             } else {
@@ -183,9 +187,9 @@ fun KitchenScreen(
 @Composable
 fun AllDaySummaryCard(name: String, quantity: Int) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF222222)),
-        shape = RoundedCornerShape(8.dp),
-        border = BorderStroke(1.dp, Color.Gray),
+        colors = CardDefaults.cardColors(containerColor = SurfaceElevated),
+        shape = CurbOSShapes.medium,
+        border = BorderStroke(1.dp, SecondaryText),
         modifier = Modifier
             .fillMaxWidth()
             .height(100.dp)
@@ -232,15 +236,15 @@ fun OrderCard(
     }
 
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF111111)),
-        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkBackground),
+        shape = CurbOSShapes.large,
         border = BorderStroke(2.dp, accentColor.copy(alpha = 0.5f)),
         modifier = Modifier
             .fillMaxWidth()
             .padding(4.dp)
             .shadow(
                 elevation = if (transaction.fulfillmentStatus == "READY") 20.dp else 4.dp, 
-                shape = RoundedCornerShape(12.dp),
+                shape = CurbOSShapes.large,
                 spotColor = accentColor.copy(alpha = 0.2f)
             )
     ) {
@@ -274,7 +278,7 @@ fun OrderCard(
                 
                 Surface(
                     color = accentColor.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = CurbOSShapes.medium,
                     border = BorderStroke(1.dp, accentColor.copy(alpha = 0.3f))
                 ) {
                     Text(
@@ -309,7 +313,7 @@ fun OrderCard(
                             // Quantity Badge
                             Surface(
                                 color = if (isCompleted) Color.Gray else Color.White,
-                                shape = RoundedCornerShape(4.dp),
+                                shape = CurbOSShapes.small,
                                 modifier = Modifier.size(32.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
@@ -359,7 +363,7 @@ fun OrderCard(
                     .fillMaxWidth()
                     .height(56.dp)
                     .testTag("bump_button_${transaction.orderNumber}"), 
-                shape = RoundedCornerShape(8.dp),
+                shape = CurbOSShapes.medium,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = when(transaction.fulfillmentStatus) {
                         "PENDING" -> accentColor
@@ -388,17 +392,17 @@ fun OrderCard(
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedButton(
                     onClick = onComplete,
-                    border = BorderStroke(1.dp, Color.Gray),
+                    border = BorderStroke(1.dp, SecondaryText),
                     modifier = Modifier.fillMaxWidth().height(48.dp)
                 ) {
-                    Text("FAST READY 🔔", color = Color.Gray)
+                    Text("FAST READY 🔔", color = SecondaryText)
                 }
             }
             
             // Small Info Tag
             Text(
                 text = "STATUS: ${transaction.fulfillmentStatus}",
-                color = Color.Gray,
+                color = SecondaryText,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 8.dp).align(Alignment.CenterHorizontally)

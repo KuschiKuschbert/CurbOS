@@ -17,6 +17,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.curbos.pos.ui.theme.ElectricLime
+import com.curbos.pos.ui.theme.ErrorRed
+import com.curbos.pos.ui.theme.SecondaryText
 
 @Composable
 fun MenuCatalogScreen(
@@ -55,7 +57,7 @@ fun MenuCatalogScreen(
 
             if (categories.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No categories found. Start by adding one!", color = Color.Gray)
+                    Text("No categories found. Start by adding one!", color = SecondaryText)
                 }
             } else {
                 LazyVerticalGrid(
@@ -163,7 +165,7 @@ fun CategoryCard(
                 Text(
                     "$count Items",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray,
+                    color = SecondaryText,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -174,11 +176,11 @@ fun CategoryCard(
                     .align(Alignment.TopEnd)
                     .padding(4.dp)
             ) {
-                IconButton(onClick = onRename, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.Edit, "Rename", modifier = Modifier.size(16.dp))
+                IconButton(onClick = onRename) {
+                    Icon(Icons.Default.Edit, contentDescription = "Rename $name", modifier = Modifier.size(20.dp))
                 }
-                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.Delete, "Delete", tint = Color.Red.copy(alpha = 0.7f), modifier = Modifier.size(16.dp))
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = "Delete $name", tint = ErrorRed.copy(alpha = 0.7f), modifier = Modifier.size(20.dp))
                 }
             }
         }

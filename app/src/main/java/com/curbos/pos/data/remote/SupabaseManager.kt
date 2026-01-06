@@ -368,8 +368,15 @@ object SupabaseManager {
 
     suspend fun uploadTransaction(transaction: Transaction): com.curbos.pos.common.Result<Unit> {
         return try {
+            com.curbos.pos.common.Logger.d("SupabaseManager", "Uploading transaction: ${transaction.id} (Order #${transaction.orderNumber})")
+            
             client.postgrest["transactions"]
-                .upsert(transaction, onConflict = "id")
+                .upsert(transaction, onConflict = "id") {
+                    select() // Request return data to verify write status
+                }
+                .decodeSingle<Transaction>() // Will throw if null/empty
+            
+            com.curbos.pos.common.Logger.d("SupabaseManager", "Transaction ${transaction.id} uploaded successfully and verified.")
             com.curbos.pos.common.Result.Success(Unit)
         } catch (e: Exception) {
             com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to upload transaction: ${e.message}", e)
@@ -479,7 +486,7 @@ object SupabaseManager {
         try {
             val channel = client.realtime.channel("menu-cal")
             val changes = channel.postgresChangeFlow<io.github.jan.supabase.realtime.PostgresAction>(schema = "public") {
-                table = "pos_menu_items"
+                table = "menu_items" // Subscribe to underlying table (views don't support Realtime)
             }
             safeSubscribe(channel)
             changes.collect {

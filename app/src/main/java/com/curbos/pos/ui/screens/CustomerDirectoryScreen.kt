@@ -21,7 +21,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.curbos.pos.ui.theme.CurbOSShapes
+import com.curbos.pos.ui.theme.DarkBackground
 import com.curbos.pos.ui.theme.ElectricLime
+import com.curbos.pos.ui.theme.SecondaryText
+import com.curbos.pos.ui.theme.SurfaceColor
 import com.curbos.pos.ui.viewmodel.SalesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,13 +61,13 @@ fun CustomerDirectoryScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Black,
+                    containerColor = DarkBackground,
                     titleContentColor = Color.White,
                     navigationIconContentColor = Color.White
                 )
             )
         },
-        containerColor = Color.Black
+        containerColor = DarkBackground
     ) { padding ->
         Column(
             modifier = Modifier
@@ -78,15 +82,15 @@ fun CustomerDirectoryScreen(
                     viewModel.searchAllCustomers(it)
                 },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Search by name, phone or zip...", color = Color.Gray) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+                placeholder = { Text("Search by name, phone or zip...", color = SecondaryText) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = SecondaryText) },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = Color.White,
                     unfocusedTextColor = Color.White,
                     focusedBorderColor = ElectricLime,
                     unfocusedBorderColor = Color.DarkGray
                 ),
-                shape = RoundedCornerShape(12.dp)
+                shape = CurbOSShapes.large
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -94,7 +98,7 @@ fun CustomerDirectoryScreen(
             Text(
                 "Total Customers: ${uiState.allCustomers.size}",
                 style = MaterialTheme.typography.labelMedium,
-                color = Color.Gray
+                color = SecondaryText
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -108,7 +112,7 @@ fun CustomerDirectoryScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { selectedCustomer = customer },
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E))
+                        colors = CardDefaults.cardColors(containerColor = SurfaceColor)
                     ) {
                         Row(
                             modifier = Modifier
@@ -133,7 +137,7 @@ fun CustomerDirectoryScreen(
                                     Text(
                                         "ZIP: ${customer.zipCode}",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = Color.Gray
+                                        color = SecondaryText
                                     )
                                 }
                             }
@@ -148,7 +152,7 @@ fun CustomerDirectoryScreen(
                                 Text(
                                     customer.currentRank,
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = Color.Gray
+                                    color = SecondaryText
                                 )
                             }
                         }

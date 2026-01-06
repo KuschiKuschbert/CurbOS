@@ -38,6 +38,9 @@ class TransactionRepositoryImpl @Inject constructor(
         // We'll use a detached scope or just let the caller handle it.
     }
 
+    private val recentlyUpdated = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    private val DEBOUNCE_MS = 5000L // Ignore remote updates for 5s after local change
+
     override fun getActiveTransactions(): Flow<List<Transaction>> {
         // Source of Truth: Local Database
         return posDao.getActiveTransactions()
@@ -50,8 +53,23 @@ class TransactionRepositoryImpl @Inject constructor(
         // 2. Update Local DB (which triggers Flow emissions automatically)
         if (result is Result.Success) {
             try {
-                // Upsert all fetched transactions
-                result.data.forEach { posDao.insertTransaction(it) }
+                val now = System.currentTimeMillis()
+                // Upsert all fetched transactions EXCEPT those we just modified locally
+                val safeToUpdate = result.data.filter { tx ->
+                    val lastUpdate = recentlyUpdated[tx.id]
+                    if (lastUpdate != null && (now - lastUpdate) < DEBOUNCE_MS) {
+                        com.curbos.pos.common.Logger.d("TransactionRepo", "Ignoring stale remote update for ${tx.id} (Debounced)")
+                        false 
+                    } else {
+                        // Cleanup old entries
+                        if (lastUpdate != null) recentlyUpdated.remove(tx.id)
+                        true
+                    }
+                }
+                
+                if (safeToUpdate.isNotEmpty()) {
+                     safeToUpdate.forEach { posDao.insertTransaction(it) }
+                }
             } catch (e: Exception) {
                 com.curbos.pos.common.Logger.e("TransactionRepository", "Failed to cache transactions: ${e.message}")
             }
@@ -62,6 +80,7 @@ class TransactionRepositoryImpl @Inject constructor(
 
     override suspend fun createTransaction(transaction: Transaction): Result<Boolean> {
         return try {
+            recentlyUpdated[transaction.id] = System.currentTimeMillis() // Debounce!
             transactionSyncManager.stageTransaction(transaction)
             triggerSync()
             
@@ -123,6 +142,7 @@ class TransactionRepositoryImpl @Inject constructor(
 
     override suspend fun updateTransaction(transaction: Transaction): Result<Unit> {
          return try {
+            recentlyUpdated[transaction.id] = System.currentTimeMillis() // Debounce!
             transactionSyncManager.stageTransactionUpdate(transaction)
             triggerSync()
             transactionSyncManager.processQueue()

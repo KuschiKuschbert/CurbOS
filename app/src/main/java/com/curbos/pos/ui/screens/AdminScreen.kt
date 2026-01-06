@@ -32,9 +32,14 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import com.curbos.pos.data.CsvExportManager
 import com.curbos.pos.data.model.Transaction
+import com.curbos.pos.ui.theme.CurbOSShapes
+import com.curbos.pos.ui.theme.DividerColor
 import com.curbos.pos.ui.theme.ElectricGradient
 import com.curbos.pos.ui.theme.ElectricLime
+import com.curbos.pos.ui.theme.ErrorRed
 import com.curbos.pos.ui.theme.SafetyOrange
+import com.curbos.pos.ui.theme.SecondaryText
+import com.curbos.pos.ui.theme.SurfaceColor
 import java.time.Instant
 import java.time.ZoneId
 
@@ -77,7 +82,7 @@ fun AdminScreen(
             Spacer(modifier = Modifier.height(24.dp))
             
             // --- QUICK ACTIONS GRID ---
-            Text("Quick Actions", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
+            Text("Quick Actions", style = MaterialTheme.typography.titleMedium, color = SecondaryText)
             Spacer(modifier = Modifier.height(16.dp))
             
             ActionGrid(
@@ -93,7 +98,7 @@ fun AdminScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             // --- INSIGHTS ---
-            Text("Business Insights", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
+            Text("Business Insights", style = MaterialTheme.typography.titleMedium, color = SecondaryText)
             Spacer(modifier = Modifier.height(16.dp))
             HourlySalesChart(hourlySales = hourlySales, modifier = Modifier.fillMaxWidth().height(180.dp))
             Spacer(modifier = Modifier.height(16.dp))
@@ -107,7 +112,7 @@ fun AdminScreen(
             
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                shape = RoundedCornerShape(12.dp)
+                shape = CurbOSShapes.large
             ) {
                 Column(Modifier.fillMaxWidth()) {
                     // Web URL
@@ -124,7 +129,7 @@ fun AdminScreen(
                             singleLine = true
                         )
                     }
-                    HorizontalDivider(color = Color.Black.copy(alpha=0.1f))
+                    HorizontalDivider(color = DividerColor)
                     
                     // Kitchen Flow
                     SettingSwitchItem(
@@ -133,7 +138,7 @@ fun AdminScreen(
                         checked = uiState.isSimplifiedKds,
                         onCheckedChange = { viewModel.toggleSimplifiedKds(it) }
                     )
-                    HorizontalDivider(color = Color.Black.copy(alpha=0.1f))
+                    HorizontalDivider(color = DividerColor)
 
                     // Developer Mode
                     SettingSwitchItem(
@@ -222,7 +227,7 @@ fun MetricsSection(revenue: Double, orders: Int) {
                 modifier = Modifier.fillMaxSize().padding(16.dp),
                 verticalArrangement = Arrangement.Center
             ) {
-                Text("Orders", style = MaterialTheme.typography.labelMedium, color = Color.Gray)
+                Text("Orders", style = MaterialTheme.typography.labelMedium, color = SecondaryText)
                 Text(orders.toString(), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
             }
         }
@@ -324,7 +329,7 @@ fun ActionCard(
             modifier = Modifier.fillMaxSize().padding(12.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.size(28.dp))
+            Icon(icon, contentDescription = title, tint = textColor, modifier = Modifier.size(28.dp))
             Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = textColor)
         }
     }
@@ -334,11 +339,11 @@ fun ActionCard(
 fun BestSellersCard(bestSellers: List<Pair<String, Int>>) {
      Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
         Column(Modifier.padding(16.dp)) {
-             Text("Top Movers", style = MaterialTheme.typography.titleSmall, color = Color.Gray)
+             Text("Top Movers", style = MaterialTheme.typography.titleSmall, color = SecondaryText)
              Spacer(modifier = Modifier.height(12.dp))
              
              if (bestSellers.isEmpty()) {
-                 Text("No sales data yet.", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                 Text("No sales data yet.", style = MaterialTheme.typography.bodyMedium, color = SecondaryText)
              } else {
                  bestSellers.forEachIndexed { index, pair ->
                      Row(
@@ -373,7 +378,7 @@ fun SettingSwitchItem(title: String, subtitle: String, checked: Boolean, onCheck
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(title, color = Color.White, fontWeight = FontWeight.Medium)
-            Text(subtitle, color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+            Text(subtitle, color = SecondaryText, style = MaterialTheme.typography.labelSmall)
         }
         Switch(
             checked = checked,
@@ -390,16 +395,16 @@ fun SettingSwitchItem(title: String, subtitle: String, checked: Boolean, onCheck
 fun DangerZone(onResetDemo: () -> Unit, onClearAll: () -> Unit) {
      Card(
         colors = CardDefaults.cardColors(containerColor = Color(0xFF2B1515)), // Dark red bg
-        shape = RoundedCornerShape(12.dp)
+        shape = CurbOSShapes.large
      ) {
          Column(Modifier.padding(16.dp)) {
-             Text("Danger Zone", color = Color(0xFFFF6B6B), fontWeight = FontWeight.Bold)
+             Text("Danger Zone", color = ErrorRed, fontWeight = FontWeight.Bold)
              Spacer(modifier = Modifier.height(16.dp))
              Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                  OutlinedButton(
                      onClick = onResetDemo, 
                      modifier = Modifier.weight(1f),
-                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF6B6B))
+                     colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorRed)
                  ) {
                      Text("Reset Demo")
                  }
@@ -425,7 +430,7 @@ fun UpdateCard(
     onUpdate: () -> Unit
 ) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+        colors = CardDefaults.cardColors(containerColor = SurfaceColor),
         border = if (isUpdateAvailable) androidx.compose.foundation.BorderStroke(1.dp, SafetyOrange) else null
     ) {
         Row(
@@ -438,7 +443,7 @@ fun UpdateCard(
                     color = if (isUpdateAvailable) SafetyOrange else Color.White,
                     fontWeight = FontWeight.Bold
                 )
-                Text("v$currentVersion", color = Color.Gray, style = MaterialTheme.typography.labelSmall)
+                Text("v$currentVersion", color = SecondaryText, style = MaterialTheme.typography.labelSmall)
                 
                 if (downloadProgress > 0) {
                      Spacer(modifier = Modifier.height(8.dp))
@@ -466,7 +471,7 @@ fun UpdateCard(
 fun HourlySalesChart(hourlySales: Map<Int, Double>, modifier: Modifier = Modifier) {
     val maxSales = hourlySales.values.maxOrNull() ?: 1.0
     
-    Canvas(modifier = modifier.background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(8.dp))) {
+    Canvas(modifier = modifier.background(Color.Black.copy(alpha = 0.3f), CurbOSShapes.medium)) {
         val barWidth = size.width / 24f
         val maxBarHeight = size.height 
         val barSpacing = 4f
