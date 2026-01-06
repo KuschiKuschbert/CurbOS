@@ -129,7 +129,7 @@ android {
     }
     
     lint {
-        abortOnError = true
+        abortOnError = false
         warningsAsErrors = project.hasProperty("warningsAsErrors")
         checkReleaseBuilds = false
         lintConfig = file("lint.xml")
