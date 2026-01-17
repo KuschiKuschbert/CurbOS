@@ -26,8 +26,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.curbos.pos.R
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import com.curbos.pos.data.CsvExportManager
@@ -82,7 +84,7 @@ fun AdminScreen(
             Spacer(modifier = Modifier.height(24.dp))
             
             // --- QUICK ACTIONS GRID ---
-            Text("Quick Actions", style = MaterialTheme.typography.titleMedium, color = SecondaryText)
+            Text(stringResource(R.string.admin_quick_actions), style = MaterialTheme.typography.titleMedium, color = SecondaryText)
             Spacer(modifier = Modifier.height(16.dp))
             
             ActionGrid(
@@ -98,7 +100,7 @@ fun AdminScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             // --- INSIGHTS ---
-            Text("Business Insights", style = MaterialTheme.typography.titleMedium, color = SecondaryText)
+            Text(stringResource(R.string.admin_insights_title), style = MaterialTheme.typography.titleMedium, color = SecondaryText)
             Spacer(modifier = Modifier.height(16.dp))
             HourlySalesChart(hourlySales = hourlySales, modifier = Modifier.fillMaxWidth().height(180.dp))
             Spacer(modifier = Modifier.height(16.dp))
@@ -107,7 +109,7 @@ fun AdminScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             // --- SETTINGS LIST ---
-            Text("System & Settings", style = MaterialTheme.typography.titleMedium, color = Color.Gray)
+            Text(stringResource(R.string.admin_system_settings), style = MaterialTheme.typography.titleMedium, color = Color.Gray)
             Spacer(modifier = Modifier.height(8.dp))
             
             Card(
@@ -120,7 +122,7 @@ fun AdminScreen(
                          OutlinedTextField(
                             value = uiState.webBaseUrl,
                             onValueChange = { viewModel.updateWebBaseUrl(it) },
-                            label = { Text("Web Portal URL") },
+                            label = { Text(stringResource(R.string.admin_setting_web_url)) },
                             modifier = Modifier.fillMaxWidth(),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = Color.Transparent,
@@ -133,8 +135,8 @@ fun AdminScreen(
                     
                     // Kitchen Flow
                     SettingSwitchItem(
-                        title = "Simplified Kitchen Flow",
-                        subtitle = "Skip cooking state, direct to ready",
+                        title = stringResource(R.string.admin_setting_kitchen_flow),
+                        subtitle = stringResource(R.string.admin_setting_kitchen_flow_subtitle),
                         checked = uiState.isSimplifiedKds,
                         onCheckedChange = { viewModel.toggleSimplifiedKds(it) }
                     )
@@ -142,8 +144,8 @@ fun AdminScreen(
 
                     // Developer Mode
                     SettingSwitchItem(
-                        title = "Developer Mode",
-                        subtitle = "Receive nightly debug builds",
+                        title = stringResource(R.string.admin_setting_dev_mode),
+                        subtitle = stringResource(R.string.admin_setting_dev_mode_subtitle),
                         checked = uiState.isDeveloperMode,
                         onCheckedChange = { viewModel.toggleDeveloperMode(it) }
                     )
@@ -186,12 +188,12 @@ fun AdminHeaderSection() {
     ) {
         Column {
              Text(
-                text = "Dashboard",
+                text = stringResource(R.string.admin_header_dashboard),
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
                 color = Color.White
             )
             Text(
-                text = "CurbOS Admin",
+                text = stringResource(R.string.admin_header_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = ElectricLime
             )
@@ -211,7 +213,7 @@ fun MetricsSection(revenue: Double, orders: Int) {
                 modifier = Modifier.fillMaxSize().padding(16.dp),
                 verticalArrangement = Arrangement.Center
             ) {
-                Text("Revenue", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha=0.7f))
+                Text(stringResource(R.string.admin_card_revenue), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha=0.7f))
                 Text("$%.2f".format(revenue), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
             }
         }
@@ -227,7 +229,8 @@ fun MetricsSection(revenue: Double, orders: Int) {
                 modifier = Modifier.fillMaxSize().padding(16.dp),
                 verticalArrangement = Arrangement.Center
             ) {
-                Text("Orders", style = MaterialTheme.typography.labelMedium, color = SecondaryText)
+
+                Text(stringResource(R.string.nav_orders), style = MaterialTheme.typography.labelMedium, color = SecondaryText)
                 Text(orders.toString(), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
             }
         }
@@ -248,14 +251,14 @@ fun ActionGrid(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
              ActionCard(
-                 title = "Menu Catalog", 
+                 title = stringResource(R.string.admin_action_menu_catalog), 
                  icon = Icons.AutoMirrored.Filled.MenuBook, 
                  color = ElectricLime, 
                  onClick = onMenuCatalog, 
                  modifier = Modifier.weight(1f)
              )
              ActionCard(
-                 title = "Modifiers", 
+                 title = stringResource(R.string.admin_action_modifiers), 
                  icon = Icons.Filled.Edit, 
                  color = MaterialTheme.colorScheme.tertiary, 
                  onClick = onModifiers, 
@@ -264,7 +267,7 @@ fun ActionGrid(
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
              ActionCard(
-                 title = "Sync Menu", 
+                 title = stringResource(R.string.admin_action_sync_menu), 
                  icon = Icons.Filled.CloudDownload, 
                  color = MaterialTheme.colorScheme.surfaceVariant, 
                  textColor = Color.White,
@@ -272,7 +275,7 @@ fun ActionGrid(
                  modifier = Modifier.weight(1f)
              )
              ActionCard(
-                 title = "Push Orders", 
+                 title = stringResource(R.string.admin_action_push_orders), 
                  icon = Icons.Filled.CloudUpload, 
                  color = MaterialTheme.colorScheme.surfaceVariant, 
                  textColor = Color.White,
@@ -282,7 +285,7 @@ fun ActionGrid(
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
              ActionCard(
-                 title = "Export CSV", 
+                 title = stringResource(R.string.admin_action_export_csv), 
                  icon = Icons.Filled.TableChart, 
                  color = MaterialTheme.colorScheme.surfaceVariant, 
                  textColor = Color.White,
@@ -290,7 +293,7 @@ fun ActionGrid(
                  modifier = Modifier.weight(1f)
              )
              ActionCard(
-                 title = "P2P Setup", 
+                 title = stringResource(R.string.admin_action_p2p), 
                  icon = Icons.Filled.Share, 
                  color = MaterialTheme.colorScheme.surfaceVariant, 
                  textColor = Color.White,
@@ -300,7 +303,7 @@ fun ActionGrid(
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
              ActionCard(
-                 title = "Customers", 
+                 title = stringResource(R.string.admin_action_customers), 
                  icon = Icons.Rounded.People, 
                  color = MaterialTheme.colorScheme.primaryContainer, 
                  textColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -339,11 +342,11 @@ fun ActionCard(
 fun BestSellersCard(bestSellers: List<Pair<String, Int>>) {
      Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
         Column(Modifier.padding(16.dp)) {
-             Text("Top Movers", style = MaterialTheme.typography.titleSmall, color = SecondaryText)
+             Text(stringResource(R.string.admin_top_movers), style = MaterialTheme.typography.titleSmall, color = SecondaryText)
              Spacer(modifier = Modifier.height(12.dp))
              
              if (bestSellers.isEmpty()) {
-                 Text("No sales data yet.", style = MaterialTheme.typography.bodyMedium, color = SecondaryText)
+                 Text(stringResource(R.string.admin_no_sales_data), style = MaterialTheme.typography.bodyMedium, color = SecondaryText)
              } else {
                  bestSellers.forEachIndexed { index, pair ->
                      Row(
@@ -398,7 +401,7 @@ fun DangerZone(onResetDemo: () -> Unit, onClearAll: () -> Unit) {
         shape = CurbOSShapes.large
      ) {
          Column(Modifier.padding(16.dp)) {
-             Text("Danger Zone", color = ErrorRed, fontWeight = FontWeight.Bold)
+             Text(stringResource(R.string.admin_danger_zone), color = ErrorRed, fontWeight = FontWeight.Bold)
              Spacer(modifier = Modifier.height(16.dp))
              Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                  OutlinedButton(
@@ -406,14 +409,14 @@ fun DangerZone(onResetDemo: () -> Unit, onClearAll: () -> Unit) {
                      modifier = Modifier.weight(1f),
                      colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorRed)
                  ) {
-                     Text("Reset Demo")
+                     Text(stringResource(R.string.admin_reset_demo))
                  }
                  OutlinedButton(
                      onClick = onClearAll,
                      modifier = Modifier.weight(1f),
                      colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
                  ) {
-                     Text("Clear All")
+                     Text(stringResource(R.string.admin_clear_all))
                  }
              }
          }
@@ -439,11 +442,11 @@ fun UpdateCard(
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = if (isUpdateAvailable) "Update Available ($latestVersion)" else "App is up to date",
+                    text = if (isUpdateAvailable) stringResource(R.string.update_available_fmt, latestVersion ?: "") else stringResource(R.string.update_up_to_date),
                     color = if (isUpdateAvailable) SafetyOrange else Color.White,
                     fontWeight = FontWeight.Bold
                 )
-                Text("v$currentVersion", color = SecondaryText, style = MaterialTheme.typography.labelSmall)
+                Text(stringResource(R.string.update_version_fmt, currentVersion), color = SecondaryText, style = MaterialTheme.typography.labelSmall)
                 
                 if (downloadProgress > 0) {
                      Spacer(modifier = Modifier.height(8.dp))
@@ -457,10 +460,10 @@ fun UpdateCard(
             Spacer(modifier = Modifier.width(16.dp))
             if (isUpdateAvailable) {
                  Button(onClick = onUpdate, colors = ButtonDefaults.buttonColors(containerColor = SafetyOrange)) {
-                     Text("Update")
+                     Text(stringResource(R.string.action_update))
                  }
             } else {
-                 TextButton(onClick = onCheck) { Text("Check") }
+                 TextButton(onClick = onCheck) { Text(stringResource(R.string.action_check)) }
             }
         }
     }

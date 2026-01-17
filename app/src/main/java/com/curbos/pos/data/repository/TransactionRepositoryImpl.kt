@@ -246,6 +246,10 @@ class TransactionRepositoryImpl @Inject constructor(
         return posDao.searchCustomersByName("%$query%")
     }
 
+    override fun getTransactionsByCustomer(customerId: String): Flow<List<Transaction>> {
+        return posDao.getTransactionsByCustomerId(customerId)
+    }
+
     override suspend fun syncAllCustomers(): Result<Unit> {
         // Bidirectional Sync: Push Local -> Pull Remote
         

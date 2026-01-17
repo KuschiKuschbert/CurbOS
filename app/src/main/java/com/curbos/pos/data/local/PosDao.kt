@@ -102,6 +102,9 @@ interface PosDao {
     @Query("SELECT * FROM transactions WHERE timestamp >= :startOfDay AND timestamp <= :endOfDay AND status = 'COMPLETED'")
     suspend fun getTransactionsForDay(startOfDay: Long, endOfDay: Long): List<Transaction>
 
+    @Query("SELECT * FROM transactions WHERE customerId = :customerId ORDER BY timestamp DESC LIMIT :limit")
+    fun getTransactionsByCustomerId(customerId: String, limit: Int = 50): Flow<List<Transaction>>
+
     // Offline Queue
     @Insert
     suspend fun insertOfflineTransaction(transaction: com.curbos.pos.data.model.OfflineTransaction)

@@ -45,7 +45,8 @@ data class SalesUiState(
     val loyaltyDialogTab: Int = 0,
     val isScannerVisible: Boolean = false,
     val milesRedeemed: Double = 0.0,
-    val allCustomers: List<Customer> = emptyList()
+    val allCustomers: List<Customer> = emptyList(),
+    val customerHistory: List<Transaction> = emptyList() // Added for Mini-Profile
 )
 
 @dagger.hilt.android.lifecycle.HiltViewModel
@@ -289,6 +290,13 @@ class SalesViewModel @javax.inject.Inject constructor(
                 _uiState.update { it.copy(loyaltyRewards = rewards) }
             }
         }
+        
+        // Fetch History (Native Passport)
+        viewModelScope.launch {
+            transactionRepository.getTransactionsByCustomer(customer.id).collect { history ->
+                _uiState.update { it.copy(customerHistory = history) }
+            }
+        }
     }
 
     fun attachCustomerById(input: String) {
@@ -320,7 +328,8 @@ class SalesViewModel @javax.inject.Inject constructor(
             it.copy(
                 selectedCustomer = null, 
                 milesRedeemed = 0.0,
-                discountAmount = 0.0 // Reset discount if removing customer? Maybe ask user. For now, reset.
+                discountAmount = 0.0, // Reset discount if removing customer
+                customerHistory = emptyList() // Clear history
             ) 
         }
     }

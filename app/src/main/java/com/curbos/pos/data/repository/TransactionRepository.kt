@@ -26,6 +26,7 @@ interface TransactionRepository {
     // Customer Directory
     fun getAllCustomers(): Flow<List<Customer>>
     fun searchCustomers(query: String): Flow<List<Customer>>
+    fun getTransactionsByCustomer(customerId: String): Flow<List<Transaction>> // Added for Passport
     suspend fun syncAllCustomers(): Result<Unit>
     suspend fun pushAllCustomers(): Result<Unit>
 }

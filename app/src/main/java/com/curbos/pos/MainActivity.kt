@@ -27,6 +27,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -227,8 +228,8 @@ class MainActivity : AppCompatActivity() {
                 if (showSquareInstallDialog) {
                     AlertDialog(
                         onDismissRequest = { showSquareInstallDialog = false },
-                        title = { Text("Square POS Required") },
-                        text = { Text("To process card payments, you need to install a Square POS app.") },
+                        title = { Text(stringResource(R.string.dialog_square_title)) },
+                        text = { Text(stringResource(R.string.dialog_square_message)) },
                         confirmButton = {
                             Button(
                                 onClick = {
@@ -236,12 +237,12 @@ class MainActivity : AppCompatActivity() {
                                     showSquareInstallDialog = false
                                 }
                             ) {
-                                Text("Install Now")
+                                Text(stringResource(R.string.dialog_square_install))
                             }
                         },
                         dismissButton = {
                             TextButton(onClick = { showSquareInstallDialog = false }) {
-                                Text("Later")
+                                Text(stringResource(R.string.dialog_later))
                             }
                         }
                     )
@@ -257,7 +258,7 @@ class MainActivity : AppCompatActivity() {
                 if (updateRelease != null) {
                     AlertDialog(
                         onDismissRequest = { updateRelease = null },
-                        title = { Text("Update Available") },
+                        title = { Text(stringResource(R.string.dialog_update_title)) },
                         text = { 
                             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                                 Text("New version ${updateRelease?.tagName} is available.\n\n${updateRelease?.body}") 
@@ -275,12 +276,12 @@ class MainActivity : AppCompatActivity() {
                                     updateRelease = null
                                 }
                             ) {
-                                Text("Update Now")
+                                Text(stringResource(R.string.dialog_update_now))
                             }
                         },
                         dismissButton = {
                             TextButton(onClick = { updateRelease = null }) {
-                                Text("Later")
+                                Text(stringResource(R.string.dialog_later))
                             }
                         }
                     )
@@ -304,40 +305,40 @@ class MainActivity : AppCompatActivity() {
                         ) {
                             Spacer(Modifier.weight(1f))
                             NavigationRailItem(
-                                icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Sales") },
-                                label = { Text("Sales") },
+                                icon = { Icon(Icons.Default.ShoppingCart, contentDescription = stringResource(R.string.nav_sales)) },
+                                label = { Text(stringResource(R.string.nav_sales)) },
                                 selected = currentRoute == "sales",
                                 onClick = { 
                                     navController.navigate("sales") { launchSingleTop = true; restoreState = true }
                                 }
                             )
                             NavigationRailItem(
-                                icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Menu") },
-                                label = { Text("Menu") },
+                                icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.nav_menu)) },
+                                label = { Text(stringResource(R.string.nav_menu)) },
                                 selected = currentRoute == "menu",
                                 onClick = { 
                                     navController.navigate("menu") { launchSingleTop = true; restoreState = true }
                                 }
                             )
                             NavigationRailItem(
-                                icon = { Icon(Icons.Outlined.SoupKitchen, contentDescription = "Kitchen") },
-                                label = { Text("Kitchen") },
+                                icon = { Icon(Icons.Outlined.SoupKitchen, contentDescription = stringResource(R.string.nav_kitchen)) },
+                                label = { Text(stringResource(R.string.nav_kitchen)) },
                                 selected = currentRoute == "kitchen",
                                 onClick = { 
                                     navController.navigate("kitchen") { launchSingleTop = true; restoreState = true }
                                 }
                             )
                             NavigationRailItem(
-                                icon = { Icon(Icons.Filled.Tv, contentDescription = "Display") },
-                                label = { Text("Display") },
+                                icon = { Icon(Icons.Filled.Tv, contentDescription = stringResource(R.string.nav_display)) },
+                                label = { Text(stringResource(R.string.nav_display)) },
                                 selected = currentRoute == "customer_display",
                                 onClick = { 
                                     navController.navigate("customer_display") { launchSingleTop = true; restoreState = true }
                                 }
                             )
                             NavigationRailItem(
-                                icon = { Icon(Icons.Default.Settings, contentDescription = "Admin") },
-                                label = { Text("Admin") },
+                                icon = { Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.nav_admin)) },
+                                label = { Text(stringResource(R.string.nav_admin)) },
                                 selected = currentRoute == "admin",
                                 onClick = { 
                                     biometricHelper.authenticate(
@@ -376,8 +377,8 @@ class MainActivity : AppCompatActivity() {
                                 ) {
                                     NavigationBarItem(
                                         modifier = Modifier.testTag("nav_sales"),
-                                        icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Sales") },
-                                        label = { Text("Sales") },
+                                        icon = { Icon(Icons.Default.ShoppingCart, contentDescription = stringResource(R.string.nav_sales)) },
+                                        label = { Text(stringResource(R.string.nav_sales)) },
                                         selected = currentRoute == "sales",
                                         onClick = { 
                                             navController.navigate("sales") {
@@ -389,8 +390,8 @@ class MainActivity : AppCompatActivity() {
                                     )
                                     NavigationBarItem(
                                         modifier = Modifier.testTag("nav_menu"),
-                                        icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Menu") },
-                                        label = { Text("Menu") },
+                                        icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.nav_menu)) },
+                                        label = { Text(stringResource(R.string.nav_menu)) },
                                         selected = currentRoute == "menu",
                                         onClick = { 
                                             navController.navigate("menu") {
@@ -402,8 +403,8 @@ class MainActivity : AppCompatActivity() {
                                     )
                                     NavigationBarItem(
                                         modifier = Modifier.testTag("nav_kitchen"),
-                                        icon = { Icon(Icons.Outlined.SoupKitchen, contentDescription = "Kitchen") },
-                                        label = { Text("Kitchen") },
+                                        icon = { Icon(Icons.Outlined.SoupKitchen, contentDescription = stringResource(R.string.nav_kitchen)) },
+                                        label = { Text(stringResource(R.string.nav_kitchen)) },
                                         selected = currentRoute == "kitchen",
                                         onClick = { 
                                             navController.navigate("kitchen") {
@@ -415,8 +416,8 @@ class MainActivity : AppCompatActivity() {
                                     )
                                     NavigationBarItem(
                                         modifier = Modifier.testTag("nav_display"),
-                                        icon = { Icon(Icons.Filled.Tv, contentDescription = "Display") },
-                                        label = { Text("Display") },
+                                        icon = { Icon(Icons.Filled.Tv, contentDescription = stringResource(R.string.nav_display)) },
+                                        label = { Text(stringResource(R.string.nav_display)) },
                                         selected = currentRoute == "customer_display",
                                         onClick = { 
                                             navController.navigate("customer_display") {
@@ -428,8 +429,8 @@ class MainActivity : AppCompatActivity() {
                                     )
                                     NavigationBarItem(
                                         modifier = Modifier.testTag("nav_admin"),
-                                        icon = { Icon(Icons.Default.Settings, contentDescription = "Admin") },
-                                        label = { Text("Admin") },
+                                        icon = { Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.nav_admin)) },
+                                        label = { Text(stringResource(R.string.nav_admin)) },
                                         selected = currentRoute == "admin",
                                         onClick = { 
                                             // Intercept for Biometric Auth
@@ -465,8 +466,8 @@ class MainActivity : AppCompatActivity() {
                                     if (session != null) {
                                         // Session exists -> Trigger Biometric Unlock
                                         biometricHelper.authenticate(
-                                            title = "Unlock CurbOS",
-                                            subtitle = "Verify identity to continue",
+                                            title = context.getString(R.string.auth_biometric_title),
+                                            subtitle = context.getString(R.string.auth_biometric_subtitle),
                                             onSuccess = {
                                                 navController.navigate("welcome") {
                                                     popUpTo("splash") { inclusive = true }

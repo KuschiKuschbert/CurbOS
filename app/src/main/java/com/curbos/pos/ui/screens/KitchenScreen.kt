@@ -23,6 +23,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.curbos.pos.R
 import com.curbos.pos.data.model.Transaction
 import com.curbos.pos.ui.viewmodel.KitchenViewModel
 import com.curbos.pos.ui.theme.CurbOSShapes
@@ -76,12 +78,12 @@ fun KitchenScreen(
             } else if (uiState.error != null) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Error Loading Orders \uD83D\uDE25", color = Color.Red, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.kitchen_error_loading), color = Color.Red, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(uiState.error ?: "Unknown error", color = Color.White)
+                        Text(uiState.error ?: stringResource(R.string.kitchen_error_unknown), color = Color.White)
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(onClick = { viewModel.refresh() }, colors = ButtonDefaults.buttonColors(containerColor = ElectricLime)) {
-                            Text("RETRY", color = Color.Black)
+                            Text(stringResource(R.string.action_retry), color = Color.Black)
                         }
                     }
                 }
@@ -105,7 +107,7 @@ fun KitchenScreen(
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        "KITCHEN DISPLAY", 
+                                        stringResource(R.string.kitchen_header_title), 
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 20.sp 
@@ -120,7 +122,7 @@ fun KitchenScreen(
                                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                                         modifier = Modifier.height(36.dp)
                                     ) {
-                                        Text(if (isAllDayView) "ALL DAY 📊" else "ORDERS 📋", color = if (isAllDayView) Color.Black else Color.White, fontSize = 12.sp)
+                                        Text(if (isAllDayView) stringResource(R.string.kitchen_view_all_day) else stringResource(R.string.kitchen_view_orders), color = if (isAllDayView) Color.Black else Color.White, fontSize = 12.sp)
                                     }
                                 }
                                 
@@ -130,7 +132,7 @@ fun KitchenScreen(
                                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                                     modifier = Modifier.height(36.dp)
                                 ) {
-                                    Text("EXIT", color = Color.White, fontSize = 12.sp)
+                                    Text(stringResource(R.string.action_exit), color = Color.White, fontSize = 12.sp)
                                 }
                             }
                         } 
@@ -149,7 +151,7 @@ fun KitchenScreen(
                             if (aggregatedItems.isEmpty()) {
                                 item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                                     Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                                        Text("No active items to cook! 🔥", color = SecondaryText, fontSize = 20.sp)
+                                        Text(stringResource(R.string.kitchen_empty_active), color = SecondaryText, fontSize = 20.sp)
                                     }
                                 }
                             } else {
@@ -162,7 +164,7 @@ fun KitchenScreen(
                             if (uiState.activeOrders.isEmpty()) {
                                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                                     Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                                        Text("All quiet in the kitchen... 👨‍🍳", color = SecondaryText, fontSize = 20.sp)
+                                        Text(stringResource(R.string.kitchen_empty_quiet), color = SecondaryText, fontSize = 20.sp)
                                     }
                                }
                             } else {
@@ -377,10 +379,10 @@ fun OrderCard(
             ) {
                 Text(
                     text = when(transaction.fulfillmentStatus) {
-                        "PENDING" -> if (isSimplifiedFlow) "READY 🔔" else "COOK 🍳"
-                        "IN_PROGRESS" -> "READY 🔔"
-                        "READY" -> "DELIVER ✅"
-                        else -> "COMPLETE"
+                        "PENDING" -> if (isSimplifiedFlow) stringResource(R.string.status_ready) else stringResource(R.string.status_cook)
+                        "IN_PROGRESS" -> stringResource(R.string.status_ready)
+                        "READY" -> stringResource(R.string.status_deliver)
+                        else -> stringResource(R.string.status_complete)
                     },
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Black
@@ -395,13 +397,13 @@ fun OrderCard(
                     border = BorderStroke(1.dp, SecondaryText),
                     modifier = Modifier.fillMaxWidth().height(48.dp)
                 ) {
-                    Text("FAST READY 🔔", color = SecondaryText)
+                    Text(stringResource(R.string.action_fast_ready), color = SecondaryText)
                 }
             }
             
             // Small Info Tag
             Text(
-                text = "STATUS: ${transaction.fulfillmentStatus}",
+                text = stringResource(R.string.label_status, transaction.fulfillmentStatus),
                 color = SecondaryText,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,

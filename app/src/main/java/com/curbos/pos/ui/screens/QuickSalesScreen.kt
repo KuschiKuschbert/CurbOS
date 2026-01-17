@@ -221,6 +221,7 @@ fun QuickSalesScreen(
     
     // Recent Orders State
     var showRecentOrders by remember { mutableStateOf(false) }
+    var showCustomerHistory by remember { mutableStateOf(false) }
     
     // UI State
     val categories = remember(menuItems) { menuItems.map { it.category }.distinct() }
@@ -363,6 +364,7 @@ fun QuickSalesScreen(
                                 onDatabaseClick = { viewModel.toggleLoyaltyDialog(true, 1) },
                                 onDetachCustomerClick = { viewModel.detachCustomer() },
                                 onScanClick = { requestCameraAndShowScanner() },
+                                onHistoryClick = { showCustomerHistory = true }, // Added
                                 onPaymentSelected = { type -> 
                                     if (uiState.customerName.isBlank() && uiState.selectedCustomer == null) {
                                         viewModel.reportError("Please enter a Customer Name / Table #")
@@ -449,6 +451,7 @@ fun QuickSalesScreen(
                                         onDatabaseClick = { viewModel.toggleLoyaltyDialog(true, 1) },
                                         onDetachCustomerClick = { viewModel.detachCustomer() },
                                         onScanClick = { requestCameraAndShowScanner() },
+                                        onHistoryClick = { showCustomerHistory = true }, // Added
                                         onPaymentSelected = { type -> 
                                             if (uiState.customerName.isBlank() && uiState.selectedCustomer == null) {
                                                 viewModel.reportError("Please enter a Customer Name / Table #")
@@ -568,7 +571,6 @@ fun QuickSalesScreen(
         )
     }
 
-    // Scanner Dialog
     if (uiState.isScannerVisible) {
         QRScannerDialog(
             onResult = { result ->
@@ -576,6 +578,14 @@ fun QuickSalesScreen(
                 viewModel.hideScanner()
             },
             onDismiss = { viewModel.hideScanner() }
+        )
+    }
+
+    // Customer History Sheet
+    if (showCustomerHistory) {
+        CustomerHistorySheet(
+            history = uiState.customerHistory,
+            onDismiss = { showCustomerHistory = false }
         )
     }
 }
@@ -872,7 +882,8 @@ fun CartContent(
     onDatabaseClick: () -> Unit,
     onDetachCustomerClick: () -> Unit,
     onScanClick: () -> Unit,
-    onPaymentSelected: (String) -> Unit
+    onPaymentSelected: (String) -> Unit,
+    onHistoryClick: () -> Unit // Added
 ) {
      val surcharge = totalAmount * 0.022
      val cardTotal = totalAmount + surcharge
@@ -887,18 +898,18 @@ fun CartContent(
         // --- CUSTOMER / LOYALTY BAR ---
         Box(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
             if (selectedCustomer != null) {
-                // Customer Attached View
                 Card(
                     colors = CardDefaults.cardColors(containerColor = ElectricLime.copy(alpha = 0.1f)),
+                    border = BorderStroke(1.dp, ElectricLime),
                     shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth().clickable { onAttachCustomerClick() } // Click to open rewards
+                    modifier = Modifier.fillMaxWidth().clickable { onAttachCustomerClick() }
                 ) {
                     Row(
                         modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 selectedCustomer.fullName ?: selectedCustomer.phoneNumber,
                                 style = MaterialTheme.typography.titleMedium,
@@ -911,8 +922,13 @@ fun CartContent(
                                 color = Color.White
                             )
                         }
-                        IconButton(onClick = onDetachCustomerClick) {
-                            Icon(Icons.Default.Close, contentDescription = "Detach", tint = Color.Gray)
+                        Row {
+                            IconButton(onClick = onHistoryClick) {
+                                Icon(Icons.Default.History, contentDescription = "History", tint = ElectricLime)
+                            }
+                            IconButton(onClick = onDetachCustomerClick) {
+                                Icon(Icons.Default.Close, contentDescription = "Detach", tint = Color.Gray)
+                            }
                         }
                     }
                 }
@@ -1775,6 +1791,79 @@ fun RewardItemRow(reward: LoyaltyReward, canAfford: Boolean, onRedeem: () -> Uni
             ) {
                 Text("Redeem", color = if (canAfford) Color.Black else Color.Gray)
             }
+        }
+    }
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomerHistorySheet(
+    history: List<com.curbos.pos.data.model.Transaction>,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = SurfaceColor,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(modifier = Modifier.padding(24.dp)) {
+            Text(
+                "Customer History", 
+                style = MaterialTheme.typography.headlineMedium, 
+                color = ElectricLime,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            if (history.isEmpty()) {
+                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    Text("No past orders found.", color = Color.Gray)
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 500.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(history) { tx ->
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = "#${tx.orderNumber}",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = com.curbos.pos.util.TimeUtils.formatTime(tx.timestamp),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color.Gray
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = tx.items.joinToString { "${it.quantity}x ${it.name}" },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.LightGray,
+                                    maxLines = 2,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "$${"%.2f".format(tx.totalAmount)} • ${tx.fulfillmentStatus}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = ElectricLime
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }

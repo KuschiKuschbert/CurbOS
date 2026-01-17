@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.curbos.pos.R
 import androidx.compose.ui.window.Dialog
 import com.curbos.pos.data.model.Transaction
 import com.curbos.pos.ui.theme.CurbOSShapes
@@ -42,16 +44,16 @@ fun RecentTransactionsDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Recent Orders", style = MaterialTheme.typography.headlineSmall, color = Color.White)
+                    Text(stringResource(R.string.dialog_recent_orders_title), style = MaterialTheme.typography.headlineSmall, color = Color.White)
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Close dialog", tint = SecondaryText)
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.content_desc_close_dialog), tint = SecondaryText)
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 if (transactions.isEmpty()) {
                     Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text("No recent orders found", color = SecondaryText)
+                        Text(stringResource(R.string.dialog_recent_orders_empty), color = SecondaryText)
                     }
                 } else {
                     LazyColumn(
@@ -71,7 +73,7 @@ fun RecentTransactionsDialog(
                     colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
                     shape = CurbOSShapes.medium
                 ) {
-                    Text("Close", color = Color.White)
+                    Text(stringResource(R.string.dialog_close), color = Color.White)
                 }
             }
         }
@@ -99,7 +101,7 @@ fun RecentTransactionItem(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "#${transaction.orderNumber} - ${transaction.customerName ?: "Guest"}",
+                    text = "#${transaction.orderNumber} - ${transaction.customerName ?: stringResource(R.string.dialog_recent_orders_guest)}",
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.White,
                     fontWeight = FontWeight.Bold
@@ -112,7 +114,7 @@ fun RecentTransactionItem(
             }
             Icon(
                 Icons.Default.History, 
-                contentDescription = "Reopen order ${transaction.orderNumber}", 
+                contentDescription = stringResource(R.string.content_desc_reopen_order, transaction.orderNumber ?: 0), 
                 tint = ElectricLime.copy(alpha = 0.5f)
             )
         }

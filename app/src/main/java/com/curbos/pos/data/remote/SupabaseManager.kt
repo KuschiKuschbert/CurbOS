@@ -27,7 +27,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 import io.github.jan.supabase.serializer.KotlinXSerializer
-import android.util.Log
 import android.content.Context
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
@@ -130,9 +129,8 @@ object SupabaseManager {
             try {
                 val jsonString = authJson.encodeToString(session)
                 prefs.edit().putString("supabase_session", jsonString).apply()
-                Log.d("Supabase_Session", "Session securely saved")
             } catch (e: Exception) {
-                Log.e("Supabase_Session", "Failed to save session: ${e.message}")
+                com.curbos.pos.common.Logger.e("Supabase_Session", "Failed to save session: ${e.message}")
             }
         }
 
@@ -141,15 +139,14 @@ object SupabaseManager {
             return try {
                 authJson.decodeFromString<UserSession>(jsonString)
             } catch (e: Exception) {
-                Log.e("Supabase_Session", "Failed to load session (Format mismatch?): ${e.message}")
+                com.curbos.pos.common.Logger.e("Supabase_Session", "Failed to load session (Format mismatch?): ${e.message}")
                 null
             }
         }
 
         override suspend fun deleteSession() {
-            prefs.edit().remove("supabase_session").apply()
-            Log.d("Supabase_Session", "Session deleted")
-        }
+                prefs.edit().remove("supabase_session").apply()
+            }
     }
 
     private var applicationContext: Context? = null
@@ -176,12 +173,12 @@ object SupabaseManager {
         } catch (e: io.github.jan.supabase.exceptions.NotFoundRestException) {
             // Table doesn't exist. Disable remote logging to prevent spam/crash loop.
             remoteLoggingDisabled = true
-            android.util.Log.w("SupabaseManager", "Remote logging disabled: 'admin_error_logs' table not found.")
+            com.curbos.pos.common.Logger.w("SupabaseManager", "Remote logging disabled: 'admin_error_logs' table not found.")
         } catch (e: Exception) {
             // Failure here must be silent for the logger to avoid direct recursion or crash
             try {
                 // Ensure we don't recurse if the Logger tries to remote log this error too
-                android.util.Log.e("SupabaseManager", "Failed to insert remote log: ${e.message}")
+                com.curbos.pos.common.Logger.e("SupabaseManager", "Failed to insert remote log: ${e.message}")
             } catch (inner: Exception) {
                 // ignore
             }
@@ -214,7 +211,7 @@ object SupabaseManager {
 
                 if (bridgeResponse.status.value != 200) {
                     val errorBody = bridgeResponse.bodyAsText()
-                    Log.e("SupabaseManager", "Bridge Exchange Failed: $errorBody")
+                    com.curbos.pos.common.Logger.e("SupabaseManager", "Bridge Exchange Failed: $errorBody")
                     return@withContext com.curbos.pos.common.Result.Error(Exception("Bridge Exchange Failed: ${bridgeResponse.status}"))
                 }
 
@@ -225,9 +222,7 @@ object SupabaseManager {
                 if (tokenHash == null || email == null) {
                     return@withContext com.curbos.pos.common.Result.Error(Exception("Invalid bridge response: missing token_hash or email"))
                 }
-
-                Log.d("SupabaseManager", "Bridge Successful. Verifying session via REST API...")
-
+                
                 // 2. Use the token_hash to sign in natively to Supabase via manual REST call
                 // (This is version-agnostic and avoids Unresolved Reference errors)
                 try {
@@ -243,7 +238,7 @@ object SupabaseManager {
 
                     if (verifyResponse.status.value !in 200..299) {
                         val errorBody = verifyResponse.bodyAsText()
-                        Log.e("SupabaseManager", "Native Verify Failed: $errorBody")
+                        com.curbos.pos.common.Logger.e("SupabaseManager", "Native Verify Failed: $errorBody")
                         return@withContext com.curbos.pos.common.Result.Error(Exception("Native Verify Failed: $errorBody"))
                     }
 
@@ -253,10 +248,9 @@ object SupabaseManager {
                     // Manually import the session into the Supabase SDK
                     client.auth.importSession(session)
                     
-                    Log.d("SupabaseManager", "Supabase Session established and imported successfully!")
                     return@withContext com.curbos.pos.common.Result.Success(true)
                 } catch (e: Exception) {
-                    Log.e("SupabaseManager", "Supabase REST Verify Failed: ${e.message}")
+                    com.curbos.pos.common.Logger.e("SupabaseManager", "Supabase REST Verify Failed: ${e.message}")
                     return@withContext com.curbos.pos.common.Result.Error(e)
                 }
 

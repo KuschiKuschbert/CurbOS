@@ -2,4 +2,103 @@
     <string name="app_name">CurbOS</string>
     <string name="com_auth0_client_id">xpHhovaF3i3aDBqFzn148dSZR3KhAa6t</string>
     <string name="com_auth0_domain">auth.prepflow.org</string>
+
+    <!-- Navigation -->
+    <string name="nav_quick_sales">Quick Sales</string>
+    <string name="nav_sales">Sales</string>
+    <string name="nav_orders">Orders</string>
+    <string name="nav_menu">Menu</string>
+    <string name="nav_kitchen">Kitchen</string>
+    <string name="nav_display">Display</string>
+    <string name="nav_admin">Admin</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_logout_title">Logout</string>
+    <string name="dialog_logout_message">Are you sure you want to logout?</string>
+    <string name="dialog_cancel">Cancel</string>
+    <string name="dialog_confirm">Confirm</string>
+    <string name="dialog_exit_title">Exit App</string>
+    <string name="dialog_exit_message">Are you sure you want to exit CurbOS?</string>
+    <string name="dialog_exit_confirm">Exit</string>
+    <string name="dialog_close">Close</string>
+    <string name="dialog_square_title">Square POS Required</string>
+    <string name="dialog_square_message">To process card payments, you need to install a Square POS app.</string>
+    <string name="dialog_square_install">Install Now</string>
+    <string name="dialog_later">Later</string>
+    <string name="dialog_update_title">Update Available</string>
+    <string name="dialog_update_now">Update Now</string>
+
+    <!-- Admin Screen -->
+    <string name="admin_header_dashboard">Dashboard</string>
+    <string name="admin_header_subtitle">CurbOS Admin</string>
+    <string name="admin_card_revenue">Revenue</string>
+    <string name="admin_insights_title">Business Insights</string>
+    <string name="admin_top_movers">Top Movers</string>
+    <string name="admin_no_sales_data">No sales data yet.</string>
+    <string name="admin_system_settings">System &amp; Settings</string>
+    <string name="admin_setting_web_url">Web Portal URL</string>
+    <string name="admin_setting_kitchen_flow">Simplified Kitchen Flow</string>
+    <string name="admin_setting_kitchen_flow_subtitle">Skip cooking state, direct to ready</string>
+    <string name="admin_setting_dev_mode">Developer Mode</string>
+    <string name="admin_setting_dev_mode_subtitle">Receive nightly debug builds</string>
+    <string name="admin_danger_zone">Danger Zone</string>
+    <string name="admin_reset_demo">Reset Demo</string>
+    <string name="admin_clear_all">Clear All</string>
+    <string name="admin_action_menu_catalog">Menu Catalog</string>
+    <string name="admin_action_modifiers">Modifiers</string>
+    <string name="admin_action_sync_menu">Sync Menu</string>
+    <string name="admin_action_push_orders">Push Orders</string>
+    <string name="admin_action_export_csv">Export CSV</string>
+    <string name="admin_action_p2p">P2P Setup</string>
+    <string name="admin_action_customers">Customers</string>
+    
+    <!-- Update Card -->
+    <string name="update_available_fmt">Update Available (%s)</string>
+    <string name="update_up_to_date">App is up to date</string>
+    <string name="update_version_fmt">v%s</string>
+    <string name="action_check">Check</string>
+    <string name="action_update">Update</string>
+
+    <string name="dialog_recent_orders_title">Recent Orders</string>
+    <string name="content_desc_close_dialog">Close dialog</string>
+    <string name="dialog_recent_orders_empty">No recent orders found</string>
+    <string name="dialog_recent_orders_guest">Guest</string>
+    <string name="content_desc_reopen_order">Reopen order %s</string>
+
+    <string name="admin_dashboard_title">Admin Dashboard</string>
+    <string name="admin_metric_revenue">Total Revenue</string>
+    <string name="admin_metric_orders">Orders Today</string>
+    <string name="admin_metric_avg_order">Avg. Order Value</string>
+    <string name="admin_metric_active_staff">Active Staff</string>
+    <string name="admin_sales_overview">Sales Overview</string>
+    <string name="admin_recent_transactions">Recent Transactions</string>
+    <string name="admin_system_status">System Status</string>
+    <string name="admin_status_network">Network Connected</string>
+    <string name="admin_status_database">Database Synced</string>
+    <string name="admin_status_printer">Printer Ready</string>
+    <string name="admin_quick_actions">Quick Actions</string>
+    <string name="admin_action_manage_menu">Manage Menu</string>
+    <string name="admin_action_staff_access">Staff Access</string>
+    <string name="admin_action_reports">Reports</string>
+    <string name="admin_action_settings">Settings</string>
+    <!-- Authentication -->
+    <string name="auth_biometric_title">Unlock CurbOS</string>
+    <string name="auth_biometric_subtitle">Verify identity to continue</string>
+
+    <!-- Kitchen Screen -->
+    <string name="kitchen_header_title">KITCHEN DISPLAY</string>
+    <string name="kitchen_view_all_day">ALL DAY 📊</string>
+    <string name="kitchen_view_orders">ORDERS 📋</string>
+    <string name="kitchen_error_loading">Error Loading Orders 😥</string>
+    <string name="kitchen_error_unknown">Unknown error</string>
+    <string name="kitchen_empty_active">No active items to cook! 🔥</string>
+    <string name="kitchen_empty_quiet">All quiet in the kitchen... 👨‍🍳</string>
+    <string name="action_retry">RETRY</string>
+    <string name="action_exit">EXIT</string>
+    <string name="action_fast_ready">FAST READY 🔔</string>
+    <string name="status_ready">READY 🔔</string>
+    <string name="status_cook">COOK 🍳</string>
+    <string name="status_deliver">DELIVER ✅</string>
+    <string name="status_complete">COMPLETE</string>
+    <string name="label_status">STATUS: %s</string>
 </resources>
