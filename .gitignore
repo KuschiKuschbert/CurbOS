@@ -13,3 +13,4 @@ build/
 .externalNativeBuild
 .cxx
 local.properties
+auth0_config_update.json
