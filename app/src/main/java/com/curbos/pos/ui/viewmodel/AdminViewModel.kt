@@ -29,6 +29,20 @@ data class AdminUiState(
     val downloadProgress: Int = 0
 )
 
+// --- MVI Intent ---
+sealed interface AdminIntent {
+    data object LoadDailyStats : AdminIntent
+    data object ForceSyncOrders : AdminIntent
+    data object SyncMenu : AdminIntent
+    data object CheckForUpdates : AdminIntent
+    data object InstallUpdate : AdminIntent
+    data object ResetToDemoData : AdminIntent
+    data object ClearAllData : AdminIntent
+    data class UpdateWebBaseUrl(val url: String) : AdminIntent
+    data class ToggleSimplifiedKds(val enabled: Boolean) : AdminIntent
+    data class ToggleDeveloperMode(val enabled: Boolean) : AdminIntent
+}
+
 @dagger.hilt.android.lifecycle.HiltViewModel
 class AdminViewModel @javax.inject.Inject constructor(
     private val posDao: PosDao,
@@ -43,7 +57,7 @@ class AdminViewModel @javax.inject.Inject constructor(
     val uiState: StateFlow<AdminUiState> = _uiState.asStateFlow()
 
     init {
-        loadDailyStats()
+        onIntent(AdminIntent.LoadDailyStats)
         loadSettings()
         
         viewModelScope.launch {
@@ -53,9 +67,22 @@ class AdminViewModel @javax.inject.Inject constructor(
         }
     }
     
-    // ... (existing functions)
+    fun onIntent(intent: AdminIntent) {
+        when (intent) {
+            is AdminIntent.LoadDailyStats -> loadDailyStats()
+            is AdminIntent.ForceSyncOrders -> forceSyncOrders()
+            is AdminIntent.SyncMenu -> syncMenu()
+            is AdminIntent.CheckForUpdates -> checkForUpdates()
+            is AdminIntent.InstallUpdate -> installUpdate()
+            is AdminIntent.ResetToDemoData -> resetToDemoData()
+            is AdminIntent.ClearAllData -> clearAllData()
+            is AdminIntent.UpdateWebBaseUrl -> updateWebBaseUrl(intent.url)
+            is AdminIntent.ToggleSimplifiedKds -> toggleSimplifiedKds(intent.enabled)
+            is AdminIntent.ToggleDeveloperMode -> toggleDeveloperMode(intent.enabled)
+        }
+    }
 
-    fun forceSyncOrders() {
+    private fun forceSyncOrders() {
         _uiState.update { it.copy(isLoading = true) }
         launchCatching {
             withContext(Dispatchers.IO) {
@@ -68,7 +95,7 @@ class AdminViewModel @javax.inject.Inject constructor(
         }
     }
     
-    fun loadSettings() {
+    private fun loadSettings() {
         _uiState.update { 
             it.copy(
                 isSimplifiedKds = profileManager.isSimplifiedKitchenFlow(),
@@ -78,12 +105,12 @@ class AdminViewModel @javax.inject.Inject constructor(
         }
     }
 
-    fun updateWebBaseUrl(url: String) {
+    private fun updateWebBaseUrl(url: String) {
         profileManager.saveWebBaseUrl(url)
         _uiState.update { it.copy(webBaseUrl = profileManager.getWebBaseUrl()) }
     }
     
-    fun toggleSimplifiedKds(enabled: Boolean) {
+    private fun toggleSimplifiedKds(enabled: Boolean) {
         profileManager.saveSimplifiedKitchenFlow(enabled)
         _uiState.update { it.copy(isSimplifiedKds = enabled) }
         launchCatching {
@@ -91,7 +118,7 @@ class AdminViewModel @javax.inject.Inject constructor(
         }
     }
 
-    fun loadDailyStats() {
+    private fun loadDailyStats() {
         _uiState.update { it.copy(isLoading = true) }
         launchCatching {
             withContext(Dispatchers.IO) {
@@ -120,7 +147,7 @@ class AdminViewModel @javax.inject.Inject constructor(
         }
     }
 
-    fun resetToDemoData() {
+    private fun resetToDemoData() {
         _uiState.update { it.copy(isLoading = true) }
         launchCatching {
             // 1. Wipe
@@ -141,7 +168,7 @@ class AdminViewModel @javax.inject.Inject constructor(
         }
     }
 
-    fun clearAllData() {
+    private fun clearAllData() {
         _uiState.update { it.copy(isLoading = true) }
         launchCatching {
             when (val result = menuRepository.wipeAllData()) {
@@ -168,7 +195,7 @@ class AdminViewModel @javax.inject.Inject constructor(
         }
     }
 
-    fun syncMenu() {
+    private fun syncMenu() {
         _uiState.update { it.copy(isLoading = true) }
         launchCatching {
              syncManager.performTwoWaySync()
@@ -177,7 +204,7 @@ class AdminViewModel @javax.inject.Inject constructor(
         }
     }
 
-    fun toggleDeveloperMode(enabled: Boolean) {
+    private fun toggleDeveloperMode(enabled: Boolean) {
         profileManager.saveDeveloperMode(enabled)
         _uiState.update { it.copy(isDeveloperMode = enabled) }
         launchCatching {
@@ -186,7 +213,7 @@ class AdminViewModel @javax.inject.Inject constructor(
         }
     }
 
-    fun checkForUpdates() {
+    private fun checkForUpdates() {
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
             val isDev = profileManager.isDeveloperMode()
@@ -204,7 +231,7 @@ class AdminViewModel @javax.inject.Inject constructor(
         }
     }
 
-    fun installUpdate() {
+    private fun installUpdate() {
         val asset = uiState.value.latestRelease?.assets?.firstOrNull { it.name.endsWith(".apk") }
         if (asset != null) {
             viewModelScope.launch {

@@ -1,6 +1,7 @@
 package com.curbos.pos.ui.screens
 
 import com.curbos.pos.data.remote.SupabaseManager
+import com.curbos.pos.ui.viewmodel.AdminIntent
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -90,8 +91,8 @@ fun AdminScreen(
             ActionGrid(
                 onMenuCatalog = onNavigateToMenuCatalog,
                 onModifiers = onNavigateToModifiers,
-                onSync = { viewModel.syncMenu() },
-                onPushOrders = { viewModel.forceSyncOrders() },
+                onSync = { viewModel.onIntent(AdminIntent.SyncMenu) },
+                onPushOrders = { viewModel.onIntent(AdminIntent.ForceSyncOrders) },
                 onExportCsv = { scope.launch { csvExportManager?.exportDailySales() } },
                 onP2P = onLaunchP2PSetup,
                 onCustomers = onNavigateToCustomers
@@ -121,7 +122,7 @@ fun AdminScreen(
                     SettingItem {
                          OutlinedTextField(
                             value = uiState.webBaseUrl,
-                            onValueChange = { viewModel.updateWebBaseUrl(it) },
+                            onValueChange = { viewModel.onIntent(AdminIntent.UpdateWebBaseUrl(it)) },
                             label = { Text(stringResource(R.string.admin_setting_web_url)) },
                             modifier = Modifier.fillMaxWidth(),
                             colors = OutlinedTextFieldDefaults.colors(
@@ -138,7 +139,7 @@ fun AdminScreen(
                         title = stringResource(R.string.admin_setting_kitchen_flow),
                         subtitle = stringResource(R.string.admin_setting_kitchen_flow_subtitle),
                         checked = uiState.isSimplifiedKds,
-                        onCheckedChange = { viewModel.toggleSimplifiedKds(it) }
+                        onCheckedChange = { viewModel.onIntent(AdminIntent.ToggleSimplifiedKds(it)) }
                     )
                     HorizontalDivider(color = DividerColor)
 
@@ -147,7 +148,7 @@ fun AdminScreen(
                         title = stringResource(R.string.admin_setting_dev_mode),
                         subtitle = stringResource(R.string.admin_setting_dev_mode_subtitle),
                         checked = uiState.isDeveloperMode,
-                        onCheckedChange = { viewModel.toggleDeveloperMode(it) }
+                        onCheckedChange = { viewModel.onIntent(AdminIntent.ToggleDeveloperMode(it)) }
                     )
                 }
             }
@@ -160,16 +161,16 @@ fun AdminScreen(
                 isUpdateAvailable = uiState.isUpdateAvailable,
                 latestVersion = uiState.latestRelease?.tagName,
                 downloadProgress = uiState.downloadProgress,
-                onCheck = { viewModel.checkForUpdates() },
-                onUpdate = { viewModel.installUpdate() }
+                onCheck = { viewModel.onIntent(AdminIntent.CheckForUpdates) },
+                onUpdate = { viewModel.onIntent(AdminIntent.InstallUpdate) }
             )
 
             Spacer(modifier = Modifier.height(32.dp))
             
             // --- DANGER ZONE ---
             DangerZone(
-                onResetDemo = { viewModel.resetToDemoData() },
-                onClearAll = { viewModel.clearAllData() }
+                onResetDemo = { viewModel.onIntent(AdminIntent.ResetToDemoData) },
+                onClearAll = { viewModel.onIntent(AdminIntent.ClearAllData) }
             )
             
             Spacer(modifier = Modifier.height(48.dp))

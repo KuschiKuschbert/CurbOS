@@ -41,7 +41,7 @@ android {
         versionCode = getGitCommitCount()
         
         // Base version for CI parsing (Do not rename this variable without updating CI/CD scripts)
-        val baseVersionName = "0.7.0"
+        val baseVersionName = "0.7.1"
         
         // Allow version name to be overridden by -PversionName
         versionName = if (project.hasProperty("versionName")) {
@@ -129,10 +129,11 @@ android {
     }
     
     lint {
-        abortOnError = false
+        abortOnError = true
         warningsAsErrors = project.hasProperty("warningsAsErrors")
         checkReleaseBuilds = false
         lintConfig = file("lint.xml")
+        baseline = file("lint-baseline.xml")
     }
     buildFeatures {
         compose = true
@@ -256,4 +257,34 @@ dependencies {
 
     // Advanced Logging
     implementation("com.jakewharton.timber:timber:5.0.1")
+}
+
+tasks.register("checkSkills") {
+    group = "verification"
+    description = "Verifies that the codebase adheres to the installed skills and standards."
+    doLast {
+        println("🕵️  Verifying Skills & Standards...")
+        
+        val requiredFiles = listOf(
+            "lint.xml",
+            "../.agent/skills"
+        )
+        
+        var failed = false
+        requiredFiles.forEach { fileName ->
+            val file = project.file(fileName)
+            if (file.exists()) {
+                println("   ✅ Found $fileName")
+            } else {
+                println("   ❌ Missing $fileName")
+                failed = true
+            }
+        }
+        
+        if (failed) {
+            throw GradleException("Skills verification FAILED. Please ensure all standards are applied.")
+        } else {
+            println("\n✅ All skills and standards verified successfully.")
+        }
+    }
 }
